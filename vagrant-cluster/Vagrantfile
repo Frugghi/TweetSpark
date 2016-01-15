@@ -50,8 +50,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             slave.vm.provision "shell", path: "scripts/setup-hadoop.sh", args: "-h #{hadoopVersion}"
             slave.vm.provision "shell", path: "scripts/setup-hadoop-slaves.sh", args: "-t #{numSlaves}"
             slave.vm.provision "shell", path: "scripts/setup-spark.sh", args: "-s #{sparkVersion}"
-            # for spark standalone only, useless with YARN
-            #slave.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
+            slave.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
         end
     end
 	
@@ -74,13 +73,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         master.vm.provision "shell", path: "scripts/setup-hadoop.sh", args: "-h #{hadoopVersion}"
         master.vm.provision "shell", path: "scripts/setup-hadoop-slaves.sh", args: "-t #{numSlaves}"
         master.vm.provision "shell", path: "scripts/setup-spark.sh", args: "-s #{sparkVersion}"
-        # for spark standalone only, useless with YARN
-        #master.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
+        master.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
 		master.vm.provision "shell", inline: "hdfs namenode -format"
-		master.vm.provision "shell", inline: "${HADOOP_PREFIX}/sbin/start-dfs.sh", run: "always"
-		master.vm.provision "shell", inline: "${HADOOP_PREFIX}/sbin/start-yarn.sh", run: "always"
-		master.vm.provision "shell", inline: "${HADOOP_PREFIX}/sbin/mr-jobhistory-daemon.sh start historyserver --config $HADOOP_CONF_DIR", run: "always"
-		# for spark standalone only, useless with YARN
-		#master.vm.provision "shell", inline: "${SPARK_HOME}/sbin/start-all.sh", run: "always"
+		master.vm.provision "shell", path: "scripts/start-services.sh", args: "--hadoop" run: "always"
 	end
 end
