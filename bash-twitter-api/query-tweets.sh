@@ -15,8 +15,19 @@ TOKEN_API="/oauth2/token"
 RATE_LIMIT_API="/$API_VERSION/application/rate_limit_status.json"
 SEARCH_API="/$API_VERSION/search/tweets.json"
 
-KEY=`jq '.key' app-credentials.json | cut -d '"' -f 2`
-SECRET=`jq '.secret' app-credentials.json | cut -d '"' -f 2`
+# Twitter OAuth
+app_credentials_path="./app-credentials.json"
+if [ ! -e $app_credentials_path ]; then
+  echo >&2 "$app_credentials_path not found. Sample:"
+  echo >&2 "{"
+  echo >&2 "  \"key\": \"PUT YOUR KEY HERE\","
+  echo >&2 "  \"secret\": \"PUT YOUR SECRET HERE\""
+  echo >&2 "}"
+  exit 1
+fi
+
+KEY=`jq '.key' $app_credentials_path | cut -d '"' -f 2`
+SECRET=`jq '.secret' $app_credentials_path | cut -d '"' -f 2`
 TOKEN=""
 
 # Helper functions
