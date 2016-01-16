@@ -14,6 +14,7 @@ hs_err_pid*
 # Vagrant resources
 vagrant-cluster/resources/*.tgz
 vagrant-cluster/resources/*.gz
+vagrant-cluster/resources/hdfs/*
 
 # Twitter API
 bash-twitter-api/*.json
@@ -113,3 +114,8 @@ release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
+
+# Vagrant stuff
+acceptance_config.yml
+boxes/*
+.vagrant
