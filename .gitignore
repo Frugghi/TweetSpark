@@ -11,15 +11,6 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
-# Vagrant resources
-vagrant-cluster/resources/*.tgz
-vagrant-cluster/resources/*.gz
-vagrant-cluster/resources/hdfs/*
-
-# Twitter API
-bash-twitter-api/*.json
-bash-twitter-api/jq*
-
 # OSX
 .DS_Store
 .AppleDouble
