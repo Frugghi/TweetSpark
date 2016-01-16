@@ -35,8 +35,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             slave.vm.box = "#{boxName}"
             slave.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
             slave.vm.synced_folder ".", "/vagrant", disabled: true
-            slave.vm.provision "file", source: "./resources/", destination: "/home/vagrant/resources"
-            slave.vm.provision "file", source: "./scripts/common.sh", destination: "/home/vagrant/resources/common.sh"
+            slave.vm.provision "file", source: "resources/", destination: "/home/vagrant/resources"
+            slave.vm.provision "file", source: "scripts/common.sh", destination: "/home/vagrant/resources/common.sh"
             slave.vm.provider "virtualbox" do |virtualbox|
               virtualbox.name = "#{nodename}"
               virtualbox.customize ["modifyvm", :id, "--memory", "#{slaveMemory}"]
@@ -58,8 +58,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         master.vm.box = "#{boxName}"
         master.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
         master.vm.synced_folder ".", "/vagrant", disabled: true
-        master.vm.provision "file", source: "./resources/", destination: "/home/vagrant/resources"
-        master.vm.provision "file", source: "./scripts/common.sh", destination: "/home/vagrant/resources/common.sh"
+        master.vm.provision "file", source: "resources/", destination: "/home/vagrant/resources"
+        master.vm.provision "file", source: "scripts/common.sh", destination: "/home/vagrant/resources/common.sh"
         master.vm.provider "virtualbox" do |provider|
             provider.name = "master"
             provider.customize ["modifyvm", :id, "--memory", "#{masterMemory}"]
@@ -77,5 +77,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		master.vm.provision "shell", inline: "hdfs namenode -format"
         master.vm.provision "shell", path: "scripts/start-services.sh", args: "--hadoop", run: "always"
         master.vm.provision "shell", path: "scripts/initialize-hdfs.sh"
+		master.vm.provision "shell", path: "master/setup-env.sh"
+		master.vm.provision "shell", inline: "chmod +x /home/vagrant/resources/deploy/spark-submit-yarn"
     end
 end
