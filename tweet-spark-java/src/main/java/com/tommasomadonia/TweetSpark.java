@@ -4,6 +4,9 @@ package com.tommasomadonia;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.spark.sql.DataFrame;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SQLContext;
 import scala.Tuple2;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaPairRDD;
@@ -21,7 +24,7 @@ import java.util.regex.Pattern;
 public class TweetSpark {
 
     private static final String appName = "com.tommasomadonia.TweetSpark";
-    private static final Pattern SPACE = Pattern.compile(" ");
+    private static final Pattern WORDS = Pattern.compile("[^\\w#/:\\.]+");
 
     public static void main(String[] args) {
 
@@ -47,12 +50,16 @@ public class TweetSpark {
 
         SparkConf sparkConfiguration = new SparkConf().setAppName(appName);
         JavaSparkContext context = new JavaSparkContext(sparkConfiguration);
-        JavaRDD<String> lines = context.textFile(path.toString(), 1);
+        SQLContext sqlContext = new SQLContext(context);
 
-        JavaRDD<String> words = lines.flatMap(new FlatMapFunction<String, String>() {
+        DataFrame tweets = sqlContext.read().json(path.toString());
+        tweets.registerTempTable("tweets");
+
+        JavaRDD<String> words = sqlContext.sql("SELECT text FROM tweets").toJavaRDD().flatMap(new FlatMapFunction<Row, String>() {
             @Override
-            public Iterable<String> call(String s) {
-                return Arrays.asList(SPACE.split(s));
+            public Iterable<String> call(Row row) {
+                String text = row.getString(0);
+                return Arrays.asList(WORDS.split(text));
             }
         });
 
@@ -74,6 +81,8 @@ public class TweetSpark {
         for (Tuple2<?,?> tuple : output) {
             System.out.println(tuple._1() + ": " + tuple._2());
         }
+
+        System.out.println("Count Tweets: " + sqlContext.sql("SELECT COUNT(*) FROM tweets").collect()[0].getLong(0));
 
         context.stop();
     }
