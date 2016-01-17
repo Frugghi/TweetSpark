@@ -6,4 +6,54 @@ if [ $# -eq 0 ]; then
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-$SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster "$DIR/$1" "${@:2}"
+
+application_id=""
+while read line
+do
+    if [ -z "$application_id" ]; then
+        application_id=`echo "$line" | egrep -o 'application_[0-9]+_[0-9]+'`
+    fi
+    echo "$line"
+done < <( $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster "$DIR/$1" "${@:2}" 2>&1 >/dev/null )
+
+echo "The applicationId is $application_id"
+
+read -r -p "Do you wanna see the log? [y/N] " response
+case $response in
+    [yY]) yarn logs -applicationId "$application_id"
+          echo "The applicationId is $application_id" ;;
+esac
+
+get_result=0
+read -r -p "Do you wanna see the results? [y/N] " response
+case $response in
+    [yY]) get_result=1;;
+    *) get_result=0;;
+esac
+
+if [ $get_result -eq 1 ]; then
+    yarn logs -applicationId "$application_id" | {
+        is_stdout=0
+        is_content=0
+        
+        while read line
+        do
+            if `echo "$line" | grep -q "^LogType:stdout"`; then
+                is_stdout=1
+                is_content=0
+            elif `echo "$line" | grep -q "^End of LogType:stdout"`; then
+                is_stdout=0
+                is_content=0
+            fi
+            
+            if [ $is_stdout -eq 1 -a $is_content -eq 1 ]; then
+                echo "$line"
+            fi
+            
+            if `echo "$line" | grep -q "^Log Contents"`; then
+                is_content=1
+            fi
+        done
+    }
+    echo "The applicationId is $application_id"
+fi
