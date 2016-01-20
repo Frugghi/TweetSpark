@@ -1,0 +1,21 @@
+command -v jq >/dev/null 2>&1 || {
+  echo >&2 "'jq' is required but it's not installed."
+  echo >&2 "Download it from https://stedolan.github.io/jq/"
+  exit 1
+}
+
+# Transformers
+function spark-transform {
+  jq '.statuses[]' "$1" -c > ${1/%.json/.spark.json}
+}
+
+function pretty-transform {
+  jq '.' "$1" -M > ${1/%.json/.pretty.json}
+}
+
+function transform {
+  local JSON="$1"
+  for t in "${@:2}"; do
+    $t-transform "$JSON"
+  done
+}

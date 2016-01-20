@@ -1,74 +1,10 @@
 #!/bin/bash
 
 export PATH=$PATH:.
-source resty -W
-
-command -v jq >/dev/null 2>&1 || {
-  echo >&2 "'jq' is required but it's not installed."
-  echo >&2 "Download it from https://stedolan.github.io/jq/"
-  exit 1
-}
-
-# Twitter API endpoints
-API_VERSION="1.1"
-TOKEN_API="/oauth2/token"
-RATE_LIMIT_API="/$API_VERSION/application/rate_limit_status.json"
-SEARCH_API="/$API_VERSION/search/tweets.json"
-
-# Twitter OAuth
-app_credentials_path="./app-credentials.json"
-if [ ! -e $app_credentials_path ]; then
-  echo >&2 "$app_credentials_path not found. Sample:"
-  echo >&2 "{"
-  echo >&2 "  \"key\": \"PUT YOUR KEY HERE\","
-  echo >&2 "  \"secret\": \"PUT YOUR SECRET HERE\""
-  echo >&2 "}"
-  exit 1
-fi
-
-KEY=`jq '.key' $app_credentials_path | cut -d '"' -f 2`
-SECRET=`jq '.secret' $app_credentials_path | cut -d '"' -f 2`
-TOKEN=""
+source twitter-api
+source transformers
 
 # Helper functions
-function get-access-token {
-  local token_path="./app-token.json"
-
-  if [ ! -e "$token_path" ]; then
-    resty "https://api.twitter.com/" > /dev/null
-    POST $TOKEN_API "grant_type=client_credentials" -H "Content-Type:application/x-www-form-urlencoded;charset=UTF-8" -u "$KEY:$SECRET" > $token_path
-  fi
-
-  TOKEN=`jq '.access_token' $token_path | cut -d '"' -f 2`
-  resty "https://api.twitter.com/" -H "Authorization: Bearer $TOKEN" > /dev/null
-}
-
-function request {
-  if [ -z "$TOKEN" ]; then
-    get-access-token
-  fi
-
-  echo `GET $@`
-}
-
-function search {
-  local OPTIND arg
-  local params=""
-  while getopts 'q:c:l:e:i:' arg
-  do
-      case ${arg} in
-          q) params="${params}&q=${OPTARG//"#"/"%23"}" ;;
-          c) params="${params}&count=${OPTARG}" ;;
-          l) params="${params}&lang=${OPTARG}" ;;
-          e) params="${params}&include_entities=${OPTARG}" ;;
-          i) params="${params}&max_id=${OPTARG}" ;;
-      esac
-  done
-  params=`echo "$params" | cut -c 2-`
-
-  echo `request $SEARCH_API -q "$params"`
-}
-
 function print-help {
   echo ""
   echo "Usage: $0 [options]"
@@ -78,65 +14,78 @@ function print-help {
   echo " -h    search by hashtags"
   echo " -l    restricts tweets to the given language, given by an ISO 639-1 code"
   echo " -c    the number of tweets to return"
+  echo " -r    reverse geocode places, <lat,lon>"
   echo ""
   exit 1
 }
 
-# Transformers
-function spark-transform {
-  jq '.statuses[]' "$1" -c > ${1/%.json/.spark.json}
+function do-search {
+  local OPTIND arg
+  local query=""
+  local total=0
+  local lang
+  local transformers=()
+  while getopts 'q:c:l:t:' arg
+  do
+      case ${arg} in
+          q) query=${OPTARG} ;;
+          c) total=${OPTARG} ;;
+          l) lang=${OPTARG} ;;
+          t) transformers[${#transformers[@]}]=${OPTARG} ;;
+      esac
+  done
+
+  basename="$query"
+  QUERY="$query -filter:retweets"
+
+  page=0
+  page_id=""
+  for (( i=$total; i>0; i=i-100 ))
+  do
+    count=$i
+    if [ "$count" -gt 100 ]; then
+      count=100
+    fi
+
+    echo "Downloading page $page ($count tweets)..."
+    output="${basename}-page${page}.json"
+    if [ -z "$page_id" ]; then
+      search -q "$query" -c "$count" -l "$lang" -e "1" > "$output"
+    else
+      search -q "$query" -c "$count" -l "$lang" -e "1" -i "$page_id" > "$output"
+    fi
+    transform "$output" "${transformers[@]}"
+
+    page_id=`jq '.search_metadata.next_results' "$output" | egrep -o 'max_id=[0-9]+' | cut -d'=' -f2`
+    page=$((page+1))
+  done
 }
 
-function pretty-transform {
-  jq '.' "$1" -M > ${1/%.json/.pretty.json}
-}
-
-# Do search!
-QUERY=""
-COUNT=""
-LANG=""
-
-while getopts q:l:c:h: arg
+# Params parsing
+COUNT=0
+RATE_LIMIT=0
+while getopts q:l:c:h:r:a: arg
 do
    case ${arg} in
       q) QUERY=${OPTARG} ;;
       h) QUERY="#${OPTARG}" ;;
       l) LANG=${OPTARG} ;;
       c) COUNT=${OPTARG} ;;
+      r) REVERSE_GEOCODE=${OPTARG} ;;
+      a) RATE_LIMIT=1 ;;
    esac
 done
 
-if [ -z $QUERY ]; then
-  >&2 echo "Query cannot be empty!"
-  print-help
-fi
-
-if [ "$COUNT" -gt "0" ]; then
-  >&2 echo "Count must be positive!"
-  print-help
-fi
-
-basename="$QUERY"
-
-page=0
-page_id=""
-for (( i=$COUNT; i>=0; i=i-100 ))
-do
-  count=$i
-  if [ "$count" -gt "100" ]; then
-    count=100
+# Body
+if [ ! -z "$QUERY" ]; then
+  do-search -q "$QUERY" -c "$COUNT" -l "$LANG" -t "spark" -t "pretty"
+elif [ ! -z "$REVERSE_GEOCODE" ]; then
+  output="$REVERSE_GEOCODE.json"
+  if [ ! -e "$output" ]; then
+    reverse-geocode "$REVERSE_GEOCODE" > "$output"
   fi
 
-  echo "Downloading page $page ($count tweets)..."
-  output="${basename}-page${page}.json"
-  if [ -z $page_id ]; then
-    search -q "$QUERY" -c "$count" -l "$LANG" -e "1" > $output
-  else
-    search -q "$QUERY" -c "$count" -l "$LANG" -e "1" -i "$page_id" > $output
-  fi
-  spark-transform $output
-  pretty-transform $output
-
-  page_id=`jq '.search_metadata.next_results' $output | egrep -o 'max_id=[0-9]+' | cut -d'=' -f2`
-  page=$((page+1))
-done
+  jq '.result.places.place_type == "city"' "$output"
+elif [ "$RATE_LIMIT" -eq 1 ]; then
+  echo `rate-limit`
+fi

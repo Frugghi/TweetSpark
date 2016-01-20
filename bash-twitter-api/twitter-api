@@ -1,0 +1,135 @@
+source OAuth
+source resty -W
+
+command -v jq >/dev/null 2>&1 || {
+  echo >&2 "'jq' is required but it's not installed."
+  echo >&2 "Download it from https://stedolan.github.io/jq/"
+  exit 1
+}
+
+# Twitter API endpoints
+API_VERSION="1.1"
+API_BASEURL="https://api.twitter.com"
+TOKEN_API="/oauth2/token"
+RATE_LIMIT_API="/$API_VERSION/application/rate_limit_status.json"
+SEARCH_API="/$API_VERSION/search/tweets.json"
+REVERSE_GEOCODE_API="/$API_VERSION/geo/reverse_geocode.json"
+
+# Init
+function init-twitter-api {
+  resty "$API_BASEURL" >/dev/null 2>&1
+
+  local user_credentials="./user-credentials.json"
+  local app_credentials="./app-credentials.json"
+  if [ ! -e "$app_credentials" ]; then
+    echo >&2 "$app_credentials not found. Sample:"
+    echo >&2 "{"
+    echo >&2 "  \"key\": \"PUT YOUR KEY HERE\","
+    echo >&2 "  \"secret\": \"PUT YOUR SECRET HERE\""
+    echo >&2 "}"
+    exit 1
+  fi
+
+  local consumer_key=`jq '.key' "$app_credentials" | cut -d '"' -f 2`
+  local consumer_secret=`jq '.secret' "$app_credentials" | cut -d '"' -f 2`
+
+  if [ -e "$user_credentials" ]; then
+    local token=`jq '.key' "$user_credentials" | cut -d '"' -f 2`
+    local token_secret=`jq '.secret' "$user_credentials" | cut -d '"' -f 2`
+  fi
+
+  OAuth-version 1.0
+  OAuth-realm "$API_BASEURL"
+  OAuth-set-consumer "$consumer_key" "$consumer_secret"
+  OAuth-set-token "$token" "$token_secret"
+}
+
+init-twitter-api
+
+# Authentication
+function authenticate {
+  local authentication_method="$1"
+  if [ -z "$authentication_method" ]; then
+    authentication_method="none"
+  fi
+
+  case "$authentication_method" in
+    app) authenticate-app ;;
+    user) authenticate-user "${@:2}" ;;
+    none) ;;
+  esac
+}
+
+function authenticate-app {
+  local token_path="./bearer-token.json"
+
+  if [ ! -e "$token_path" ]; then
+    POST "$TOKEN_API" "grant_type=client_credentials" \
+      -H "Content-Type:application/x-www-form-urlencoded;charset=UTF-8" \
+      -u "$oauth_consumer_key:$oauth_consumer_secret" > "$token_path"
+  fi
+
+  if [ -z `OAuth-bearer-token` ]; then
+    OAuth-bearer-token `jq '.access_token' "$token_path" | cut -d '"' -f 2`
+  fi
+
+  OAuth-bearer-header
+}
+
+function authenticate-user {
+  OAuth-header "$@"
+}
+
+function authenticated {
+  local HTTPmethod="$2"
+  local URL="$3"
+  local header=`authenticate "$@"`
+  local params=""
+  for param in "${@:4}"
+  do
+    param=`encode $param`
+    if [ -z "$params" ]; then
+      params="$param"
+    else
+      params="$params&$param"
+    fi
+  done
+
+  $HTTPmethod "$URL" -q "$params" -H "$header"
+}
+
+# API calls
+function search {
+  local OPTIND arg
+  local params=()
+  while getopts 'q:c:l:e:i:' arg
+  do
+    case ${arg} in
+      q) params[${#params[@]}]="q=${OPTARG}" ;;
+      c) params[${#params[@]}]="count=${OPTARG}" ;;
+      l) params[${#params[@]}]="lang=${OPTARG}" ;;
+      e) params[${#params[@]}]="include_entities=${OPTARG}" ;;
+      i) params[${#params[@]}]="max_id=${OPTARG}" ;;
+    esac
+  done
+
+  authenticated app GET "$SEARCH_API" "${params[@]}"
+}
+
+function reverse-geocode {
+  local latitude=`echo "$1" | cut -d ',' -f 1`
+  local longitude=`echo "$1" | cut -d ',' -f 2`
+
+  authenticated user GET "$REVERSE_GEOCODE_API" "lat=$latitude" "long=$longitude" "granularity=city"
+}
+
+function rate-limit {
+  authenticated user GET "$RATE_LIMIT_API"
+}
+
+# Helpers
+function encode {
+  local key=`cut -d\= -f 1 <<< "$1"`
+  local value=`cut -d\= -f 2 <<< "$1"`
+  echo "$key=$(percent-encode "$value")"
+}

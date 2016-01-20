@@ -1,0 +1,176 @@
+# https://github.com/livibetter-backup/bash-oauth/
+
+# Setter/getter
+function OAuth-set-consumer {
+  oauth_consumer_key="$1"
+  oauth_consumer_secret="$2"
+}
+
+function OAuth-set-token {
+  oauth_token="$1"
+  oauth_token_secret="$2"
+}
+
+function OAuth-realm {
+  if [ "$#" -eq 0 ]; then
+    echo "$oauth_realm"
+  else
+    oauth_realm="$1"
+  fi
+}
+
+function OAuth-version {
+  if [ "$#" -eq 0 ]; then
+    echo "$oauth_version"
+  else
+    oauth_version="$1"
+  fi
+}
+
+function OAuth-bearer-token {
+  if [ "$#" -eq 0 ]; then
+    echo "$oauth_bearer_token"
+  else
+    oauth_bearer_token="$1"
+  fi
+}
+
+function OAuth-nonce {
+  local md5=""
+  if hash md5sum 2>/dev/null; then
+    md5="md5sum"
+  else
+    md5="md5 -r"
+  fi
+  $md5 <<< "$RANDOM-$(date +%s.%N)" | cut -d' ' -f 1
+}
+
+function OAuth-timestamp {
+	echo "$(date +%s)"
+}
+
+# Helpers
+function percent-encode {
+    local LANG=C
+    local length="${#1}"
+    for (( i = 0; i < length; i++ )); do
+        local c="${1:i:1}"
+        case $c in
+            [a-zA-Z0-9.~_-]) printf "$c" ;;
+            *) printf '%%%02X' "'$c" ;;
+        esac
+    done
+}
+
+function percent-encode-pair {
+  local key=`cut -d\= -f 1 <<< "$1"`
+  local value=`cut -d\= -f 2 <<< "$1"`
+  echo "$key=$(percent-encode "$value")"
+}
+
+function OAuth-parameter {
+  local key=`percent-encode $1`
+  local value=`percent-encode $2`
+  echo "$key=$3$value$3"
+}
+
+function OAuth-parameters {
+  for param in "$@"
+  do
+    if [ ! -z "${!param}" ]; then
+      echo `OAuth-parameter "$param" "${!param}"`
+    fi
+  done
+}
+
+function OAuth-parameters-string {
+  (
+    local parameters_string=""
+    IFS=$'\n'
+    for param in $(printf '%s\n' "$@" | sort -t '=')
+    do
+      if [ -z "$parameters_string" ]; then
+        parameters_string="$param"
+      else
+        parameters_string="$parameters_string&$param"
+      fi
+    done
+
+    echo "$parameters_string"
+  )
+}
+
+# Signature
+function OAuth-signature {
+  local method="$1"
+  local base_string="$2"
+  local consumer_secret=`percent-encode "$oauth_consumer_secret"`
+  local token_secret=`percent-encode "$oauth_token_secret"`
+  OAuth-$method "$base_string" "$consumer_secret&$token_secret"
+}
+
+function OAuth-signature-base-string {
+  local HTTPmethod="$1"
+  local URL=`percent-encode "$2"`
+  local parameters=`percent-encode "$3"`
+	echo "$HTTPmethod&$URL&$parameters"
+}
+
+function OAuth-HMAC-SHA1 {
+	local text="$1"
+	local key="$2"
+	echo -n "$text" | openssl dgst -sha1 -binary -hmac "$key" | base64
+}
+
+# Header
+function OAuth-bearer-header {
+  local token="$oauth_bearer_token"
+  if [ ! -z "$1" ]; then
+    token="$1"
+  fi
+  echo "Authorization: Bearer $oauth_bearer_token"
+}
+
+function OAuth-header {
+  # Collecting the request method and URL
+  local HTTPmethod="$1"
+  local URL="$2"
+  if [ "$URL" != http* ]; then
+    URL="$oauth_realm$URL"
+  fi
+
+  # Collecting parameters
+  oauth_nonce=`OAuth-nonce`
+  oauth_timestamp=`OAuth-timestamp`
+  oauth_signature_method="HMAC-SHA1"
+
+  local oauth_parameters=(
+    `OAuth-parameter 'oauth_consumer_key' "$oauth_consumer_key"`
+    `OAuth-parameter 'oauth_signature_method' "$oauth_signature_method"`
+    `OAuth-parameter 'oauth_version' "$oauth_version"`
+    `OAuth-parameter 'oauth_nonce' "$oauth_nonce"`
+    `OAuth-parameter 'oauth_timestamp' "$oauth_timestamp"`
+    `OAuth-parameter 'oauth_token' "$oauth_token"`
+  )
+	local all_parameters=("${oauth_parameters[@]}")
+  for param in "${@:3}"
+  do
+    all_parameters[${#all_parameters[@]}]=`percent-encode-pair "$param"`
+  done
+  local parameters_string=`OAuth-parameters-string "${all_parameters[@]}"`
+
+  # Creating the signature base string
+	local signature_base_string=`OAuth-signature-base-string "$HTTPmethod" "$URL" "$parameters_string"`
+
+  # Calculating the signature
+  local signature=`OAuth-signature "$oauth_signature_method" "$signature_base_string" "$oauth_consumer_secret" "$oauth_token_secret"`
+
+  # Generating the header
+  echo -n "Authorization: OAuth "
+  [[ "$oauth_realm" != "" ]] && echo -n "realm=\"$oauth_realm\", "
+  echo -n `OAuth-parameter "oauth_signature" "$signature" '"'`
+  for parameter in "${oauth_parameters[@]}"
+  do
+    echo -n ", $(cut -d\= -f 1 <<< "$parameter")=\"$(cut -d\= -f 2 <<< "$parameter")\""
+  done
+}
