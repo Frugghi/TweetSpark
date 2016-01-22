@@ -25,21 +25,39 @@ function do-search {
   local total=0
   local lang
   local transformers=()
-  while getopts 'q:c:l:t:' arg
+  local page_id=""
+  local resume=0
+  while getopts 'q:c:l:t:r:' arg
   do
       case ${arg} in
           q) query=${OPTARG} ;;
           c) total=${OPTARG} ;;
           l) lang=${OPTARG} ;;
           t) transformers[${#transformers[@]}]=${OPTARG} ;;
+          r) resume=${OPTARG} ;;
       esac
   done
 
-  basename="$query"
+  mkdir -p "tweets"
+  basename="./tweets/${query//:/}"
   QUERY="$query -filter:retweets"
-
   page=0
-  page_id=""
+
+  if [ ! -z "$resume" -a "$resume" -eq 1 ]; then
+    while [ -e "${basename}-page${page}.json" ]
+    do
+      page_id=`jq '.search_metadata.next_results' "${basename}-page${page}.json" | egrep -o 'max_id=[0-9]+' | cut -d'=' -f2`
+      page=$((page+1))
+    done
+
+    if [ -z "$page_id" ]; then
+      echo "Last page reached, no more tweets available!"
+      return
+    fi
+
+    echo "Resuming from page $page and ID $page_id..."
+  fi
+
   for (( i=$total; i>0; i=i-100 ))
   do
     count=$i
@@ -58,34 +76,38 @@ function do-search {
 
     page_id=`jq '.search_metadata.next_results' "$output" | egrep -o 'max_id=[0-9]+' | cut -d'=' -f2`
     page=$((page+1))
+
+    if [ -z "$page_id" ]; then
+      break
+    fi
   done
 }
 
 # Params parsing
 COUNT=0
 RATE_LIMIT=0
-while getopts q:l:c:h:r:a: arg
+while getopts q:l:c:h:g:a:p:r: arg
 do
    case ${arg} in
       q) QUERY=${OPTARG} ;;
       h) QUERY="#${OPTARG}" ;;
+      p) QUERY="place:${OPTARG}" ;;
       l) LANG=${OPTARG} ;;
       c) COUNT=${OPTARG} ;;
-      r) REVERSE_GEOCODE=${OPTARG} ;;
+      g) REVERSE_GEOCODE=${OPTARG} ;;
       a) RATE_LIMIT=1 ;;
+      r) RESUME=${OPTARG} ;;
    esac
 done
 
 # Body
 if [ ! -z "$QUERY" ]; then
-  do-search -q "$QUERY" -c "$COUNT" -l "$LANG" -t "spark" -t "pretty"
+  do-search -q "$QUERY" -c "$COUNT" -l "$LANG" -r "$RESUME" -t "spark" -t "pretty"
 elif [ ! -z "$REVERSE_GEOCODE" ]; then
   output="$REVERSE_GEOCODE.json"
   if [ ! -e "$output" ]; then
     reverse-geocode "$REVERSE_GEOCODE" > "$output"
   fi
-
-  jq '.result.places.place_type == "city"' "$output"
 elif [ "$RATE_LIMIT" -eq 1 ]; then
   echo `rate-limit`
 fi
