@@ -56,9 +56,8 @@ fi
 init-stream-api
 
 count=0
-echo -n "Init stream..."
-while IFS='\n' read line ; do
+echo -n "Initializing stream..."
+while IFS='\n' read tweet ; do
   count=$((count+1))
   printf "\r\e[0KTweets received: $count"
-  echo "$line" >> "$NAME.json"
-done < <( stream -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" )
+done < <( stream -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | tee -a "$NAME.json" )
