@@ -54,6 +54,6 @@ count=0
 echo -n "Init stream..."
 while IFS='\n' read line ; do
   count=$((count+1))
-  printf "\r\e[0KTweet received: $count"
+  printf "\r\e[0KTweets received: $count"
   echo "$line" >> "$NAME.json"
 done < <( stream -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" )
