@@ -34,7 +34,7 @@ function do-search {
           c) total=${OPTARG} ;;
           l) lang=${OPTARG} ;;
           t) transformers[${#transformers[@]}]=${OPTARG} ;;
-          r) resume=${OPTARG} ;;
+          r) [ ! -z "$resume" ] && resume=${OPTARG} ;;
       esac
   done
 
@@ -43,7 +43,7 @@ function do-search {
   QUERY="$query -filter:retweets"
   page=0
 
-  if [ ! -z "$resume" -a "$resume" -eq 1 ]; then
+  if [ "$resume" -eq 1 ]; then
     while [ -e "${basename}-page${page}.json" ]
     do
       page_id=`jq '.search_metadata.next_results' "${basename}-page${page}.json" | egrep -o 'max_id=[0-9]+' | cut -d'=' -f2`
@@ -101,6 +101,8 @@ do
 done
 
 # Body
+init-search-api
+
 if [ ! -z "$QUERY" ]; then
   do-search -q "$QUERY" -c "$COUNT" -l "$LANG" -r "$RESUME" -t "spark" -t "pretty"
 elif [ ! -z "$REVERSE_GEOCODE" ]; then

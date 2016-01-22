@@ -9,15 +9,17 @@ command -v jq >/dev/null 2>&1 || {
 
 # Twitter API endpoints
 API_VERSION="1.1"
-API_BASEURL="https://api.twitter.com"
+SEARCH_API_BASEURL="https://api.twitter.com"
+STREAM_API_BASEURL="https://stream.twitter.com"
 TOKEN_API="/oauth2/token"
 RATE_LIMIT_API="/$API_VERSION/application/rate_limit_status.json"
 SEARCH_API="/$API_VERSION/search/tweets.json"
 REVERSE_GEOCODE_API="/$API_VERSION/geo/reverse_geocode.json"
+STREAM_FILTER="/$API_VERSION/statuses/filter.json"
 
 # Init
 function init-twitter-api {
-  resty "$API_BASEURL" >/dev/null 2>&1
+  resty "$1" >/dev/null 2>&1
 
   local user_credentials="./user-credentials.json"
   local app_credentials="./app-credentials.json"
@@ -39,12 +41,20 @@ function init-twitter-api {
   fi
 
   OAuth-version 1.0
-  OAuth-realm "$API_BASEURL"
   OAuth-set-consumer "$consumer_key" "$consumer_secret"
   OAuth-set-token "$token" "$token_secret"
 }
 
-init-twitter-api
+function init-search-api {
+  HTTPmethodPrefix=""
+  init-twitter-api "$SEARCH_API_BASEURL"
+  OAuth-realm "$SEARCH_API_BASEURL"
+}
+
+function init-stream-api {
+  HTTPmethodPrefix="curl"
+  init-twitter-api "$STREAM_API_BASEURL"
+}
 
 # Authentication
 function authenticate {
@@ -95,7 +105,7 @@ function authenticated {
     fi
   done
 
-  $HTTPmethod "$URL" -q "$params" -H "$header"
+  $HTTPmethodPrefix$HTTPmethod "$URL" -q "$params" -H "$header"
 }
 
 # API calls
@@ -127,9 +137,52 @@ function rate-limit {
   authenticated user GET "$RATE_LIMIT_API"
 }
 
+function stream {
+  local OPTIND arg
+  local params=()
+  while getopts 't:l:p:f:' arg
+  do
+    case ${arg} in
+      t) [ ! -z "${OPTARG}" ] && params[${#params[@]}]="track=${OPTARG}" ;;
+      l) [ ! -z "${OPTARG}" ] && params[${#params[@]}]="language=${OPTARG}" ;;
+      p) [ ! -z "${OPTARG}" ] && params[${#params[@]}]="locations=${OPTARG}" ;;
+      f) [ ! -z "${OPTARG}" ] && params[${#params[@]}]="follow=${OPTARG}" ;;
+    esac
+  done
+
+  authenticated user GET "$STREAM_API_BASEURL$STREAM_FILTER" "${params[@]}"
+}
+
 # Helpers
 function encode {
   local key=`cut -d\= -f 1 <<< "$1"`
   local value=`cut -d\= -f 2 <<< "$1"`
   echo "$key=$(percent-encode "$value")"
+}
+
+function curlGET {
+  local URL="$1"
+  local query=""
+  local header=""
+  local parse_query=0
+  local parse_header=0
+  for i in "$@"; do
+    if [ "$parse_query" -eq 1 ]; then
+      parse_query=0
+      query="$i"
+      continue
+    fi
+    if [ "$parse_header" -eq 1 ]; then
+      parse_header=0
+      header="$i"
+      continue
+    fi
+    [ "$i" = "-H" ] && parse_header=1 && continue
+    [ "$i" = "-q" ] && parse_query=1 && continue
+  done
+
+  curl -sS \
+       --get "$URL" \
+       --data "$query" \
+       --header "$header"
 }
