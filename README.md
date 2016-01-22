@@ -11,6 +11,15 @@
     "secret": "PUT YOUR SECRET HERE"
 }
 ```
+- Create `user-credentials.json` (for user authenticated API calls)
+```JSON
+{
+    "key": "PUT YOUR KEY HERE",
+    "secret": "PUT YOUR SECRET HERE"
+}
+```
+- Run `search-tweets.sh` to query the Search API
+- Run `streaming-tweets.sh` to query the Streaming API
 
 #### Notes
 The script uses [application-only authentication](https://dev.twitter.com/oauth/application-only).
