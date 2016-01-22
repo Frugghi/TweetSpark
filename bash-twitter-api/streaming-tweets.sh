@@ -47,6 +47,11 @@ do
    esac
 done
 
+if [ -z "$TRACK" -a -z "$FOLLOW" -a "$PLACES" ]; then
+  print-help
+  exit 1
+fi
+
 # Body
 init-stream-api
 

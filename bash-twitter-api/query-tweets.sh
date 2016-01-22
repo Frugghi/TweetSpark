@@ -112,4 +112,6 @@ elif [ ! -z "$REVERSE_GEOCODE" ]; then
   fi
 elif [ "$RATE_LIMIT" -eq 1 ]; then
   echo `rate-limit`
+else
+  print-help 
 fi
