@@ -47,7 +47,7 @@ do
    esac
 done
 
-if [ -z "$TRACK" -a -z "$FOLLOW" -a "$PLACES" ]; then
+if [ -z "$TRACK" -a -z "$FOLLOW" -a -z "$PLACES" ]; then
   print-help
   exit 1
 fi
