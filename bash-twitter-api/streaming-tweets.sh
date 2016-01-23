@@ -26,25 +26,25 @@ FOLLOW=""
 NAME="stream"
 while getopts 't:l:p:f:n:' arg
 do
-   case ${arg} in
-     l) LANG="${OPTARG}" ;;
-     n) NAME="${OPTARG}" ;;
-     t) if [ -z "$TRACK" ]; then
-          TRACK="${OPTARG}"
-        else
-          TRACK="$TRACK,${OPTARG}"
-        fi ;;
-     p) if [ -z "$PLACES" ]; then
-          PLACES="${OPTARG}"
-        else
-          PLACES="$PLACES,${OPTARG}"
-        fi ;;
-     f) if [ -z "$FOLLOW" ]; then
-          FOLLOW="${OPTARG}"
-        else
-          FOLLOW="$FOLLOW,${OPTARG}"
-        fi ;;
-   esac
+  case ${arg} in
+    l) LANG="${OPTARG}" ;;
+    n) NAME="${OPTARG}" ;;
+    t) if [ -z "$TRACK" ]; then
+        TRACK="${OPTARG}"
+       else
+        TRACK="$TRACK,${OPTARG}"
+       fi ;;
+    p) if [ -z "$PLACES" ]; then
+        PLACES="${OPTARG}"
+       else
+        PLACES="$PLACES,${OPTARG}"
+       fi ;;
+    f) if [ -z "$FOLLOW" ]; then
+        FOLLOW="${OPTARG}"
+       else
+        FOLLOW="$FOLLOW,${OPTARG}"
+       fi ;;
+  esac
 done
 
 if [ -z "$TRACK" -a -z "$FOLLOW" -a -z "$PLACES" ]; then

@@ -29,13 +29,13 @@ function do-search {
   local resume=0
   while getopts 'q:c:l:t:r:' arg
   do
-      case ${arg} in
-          q) query=${OPTARG} ;;
-          c) total=${OPTARG} ;;
-          l) lang=${OPTARG} ;;
-          t) transformers[${#transformers[@]}]=${OPTARG} ;;
-          r) [ ! -z "$resume" ] && resume=${OPTARG} ;;
-      esac
+    case ${arg} in
+      q) query=${OPTARG} ;;
+      c) total=${OPTARG} ;;
+      l) lang=${OPTARG} ;;
+      t) transformers[${#transformers[@]}]=${OPTARG} ;;
+      r) [ ! -z "$resume" ] && resume=${OPTARG} ;;
+    esac
   done
 
   mkdir -p "tweets"
@@ -88,16 +88,16 @@ COUNT=0
 RATE_LIMIT=0
 while getopts q:l:c:h:g:a:p:r: arg
 do
-   case ${arg} in
-      q) QUERY=${OPTARG} ;;
-      h) QUERY="#${OPTARG}" ;;
-      p) QUERY="place:${OPTARG}" ;;
-      l) LANG=${OPTARG} ;;
-      c) COUNT=${OPTARG} ;;
-      g) REVERSE_GEOCODE=${OPTARG} ;;
-      a) RATE_LIMIT=1 ;;
-      r) RESUME=${OPTARG} ;;
-   esac
+  case ${arg} in
+    q) QUERY=${OPTARG} ;;
+    h) QUERY="#${OPTARG}" ;;
+    p) QUERY="place:${OPTARG}" ;;
+    l) LANG=${OPTARG} ;;
+    c) COUNT=${OPTARG} ;;
+    g) REVERSE_GEOCODE=${OPTARG} ;;
+    a) RATE_LIMIT=1 ;;
+    r) RESUME=${OPTARG} ;;
+  esac
 done
 
 # Body
@@ -113,5 +113,5 @@ elif [ ! -z "$REVERSE_GEOCODE" ]; then
 elif [ "$RATE_LIMIT" -eq 1 ]; then
   echo `rate-limit`
 else
-  print-help 
+  print-help
 fi
