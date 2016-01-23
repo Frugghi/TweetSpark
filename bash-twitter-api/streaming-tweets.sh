@@ -14,6 +14,7 @@ function print-help {
   echo " -p    bounding boxes to filter Tweets by. <south, west, north, east>"
   echo " -f    the users whose Tweets should be delivered on the stream"
   echo " -n    set the stream name, output file will be <name>.json"
+  echo " -s    use sample endpoint instead of filter"
   echo ""
   exit 1
 }
@@ -24,11 +25,13 @@ TRACK=""
 PLACES=""
 FOLLOW=""
 NAME="stream"
-while getopts 't:l:p:f:n:' arg
+API="stream"
+while getopts 't:l:p:f:n:s' arg
 do
   case ${arg} in
     l) LANG="${OPTARG}" ;;
     n) NAME="${OPTARG}" ;;
+    s) API="sample" ;;
     t) if [ -z "$TRACK" ]; then
         TRACK="${OPTARG}"
        else
@@ -47,7 +50,7 @@ do
   esac
 done
 
-if [ -z "$TRACK" -a -z "$FOLLOW" -a -z "$PLACES" ]; then
+if [ "$API" == "stream" -a -z "$TRACK" -a -z "$FOLLOW" -a -z "$PLACES" ]; then
   print-help
   exit 1
 fi
@@ -55,9 +58,16 @@ fi
 # Body
 init-stream-api
 
+output="$NAME.json"
 count=0
-echo -n "Initializing stream..."
-while IFS='\n' read tweet ; do
+if [ -e "$output" ]; then
+  printf "\r\e[0KResuming..."
+  count=`wc -l "$output"`
+fi
+
+printf "\r\e[0KInitializing stream..."
+while IFS='\n' read tweets ; do
   count=$((count+1))
-  printf "\r\e[0KTweets received: $count"
-done < <( stream -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | tee -a "$NAME.json" )
+  size=`du -m "$output" | cut -f1`
+  printf "\r\e[0KTweets received: $count (${size}MB)"
+done < <( $API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | grep . | tee -a "$output" )

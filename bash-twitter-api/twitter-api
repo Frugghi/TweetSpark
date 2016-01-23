@@ -16,6 +16,7 @@ RATE_LIMIT_API="/$API_VERSION/application/rate_limit_status.json"
 SEARCH_API="/$API_VERSION/search/tweets.json"
 REVERSE_GEOCODE_API="/$API_VERSION/geo/reverse_geocode.json"
 STREAM_FILTER="/$API_VERSION/statuses/filter.json"
+STREAM_SAMPLE="/$API_VERSION/statuses/sample.json"
 
 # Init
 function init-twitter-api {
@@ -108,7 +109,7 @@ function authenticated {
   $HTTPmethodPrefix$HTTPmethod "$URL" -q "$params" -H "$header"
 }
 
-# API calls
+# Search API
 function search {
   local OPTIND arg
   local params=()
@@ -137,6 +138,7 @@ function rate-limit {
   authenticated user GET "$RATE_LIMIT_API"
 }
 
+# Stream API
 function stream {
   local OPTIND arg
   local params=()
@@ -151,6 +153,20 @@ function stream {
   done
 
   authenticated user GET "$STREAM_API_BASEURL$STREAM_FILTER" "${params[@]}"
+}
+
+function sample {
+  local OPTIND arg
+  local params=()
+  while getopts 't:l:p:f:' arg
+  do
+    case ${arg} in
+      l) [ ! -z "${OPTARG}" ] && params[${#params[@]}]="language=${OPTARG}" ;;
+      *) ;;
+    esac
+  done
+
+  authenticated user GET "$STREAM_API_BASEURL$STREAM_SAMPLE" "${params[@]}"
 }
 
 # Helpers
