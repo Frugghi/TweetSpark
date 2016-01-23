@@ -86,7 +86,7 @@ function do-search {
 # Params parsing
 COUNT=0
 RATE_LIMIT=0
-while getopts q:l:c:h:g:a:p:r: arg
+while getopts q:l:c:h:g:p:ar arg
 do
   case ${arg} in
     q) QUERY=${OPTARG} ;;
@@ -96,7 +96,7 @@ do
     c) COUNT=${OPTARG} ;;
     g) REVERSE_GEOCODE=${OPTARG} ;;
     a) RATE_LIMIT=1 ;;
-    r) RESUME=${OPTARG} ;;
+    r) RESUME=1 ;;
   esac
 done
 
