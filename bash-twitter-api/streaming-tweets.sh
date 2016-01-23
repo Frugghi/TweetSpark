@@ -62,7 +62,7 @@ output="$NAME.json"
 count=0
 if [ -e "$output" ]; then
   printf "\r\e[0KResuming..."
-  count=`wc -l "$output"`
+  count=`wc -l "$output" | egrep -o '[0-9]+' | head -n 1`
 fi
 
 printf "\r\e[0KInitializing stream..."
@@ -70,4 +70,4 @@ while IFS='\n' read tweets ; do
   count=$((count+1))
   size=`du -m "$output" | cut -f1`
   printf "\r\e[0KTweets received: $count (${size}MB)"
-done < <( $API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | grep . | tee -a "$output" )
+done < <( $API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | grep '^{"created_at"' | tee -a "$output" )
