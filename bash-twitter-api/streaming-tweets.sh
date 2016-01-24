@@ -58,16 +58,21 @@ fi
 # Body
 init-stream-api
 
+trap "echo" EXIT
+
 output="$NAME.json"
 count=0
 if [ -e "$output" ]; then
-  printf "\r\e[0KResuming..."
+  printf "\r\e[0KIntegrity checking..."
+  tmpfile=`mktemp`
+  filter-tweets "$output" > "$tmpfile"
+  if cmp -s "$tmpfile" "$output"; then
+    rm -f "$tmpfile"
+  else
+    mv -f "$tmpfile" "$output"
+  fi
   count=`wc -l "$output" | egrep -o '[0-9]+' | head -n 1`
 fi
 
 printf "\r\e[0KInitializing stream..."
-while IFS='\n' read tweets ; do
-  count=$((count+1))
-  size=`du -m "$output" | cut -f1`
-  printf "\r\e[0KTweets received: $count (${size}MB)"
-done < <( $API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | grep '^{"created_at"' | tee -a "$output" )
+$API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | filter-tweets | tee -a "$output" | print-streaming-info -c "$count" -n "$output"
