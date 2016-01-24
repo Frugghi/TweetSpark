@@ -33,12 +33,12 @@ function init-twitter-api {
     exit 1
   fi
 
-  local consumer_key=`jq '.key' "$app_credentials" | cut -d '"' -f 2`
-  local consumer_secret=`jq '.secret' "$app_credentials" | cut -d '"' -f 2`
+  local consumer_key=`jq -Mr '.key' "$app_credentials"`
+  local consumer_secret=`jq -Mr '.secret' "$app_credentials"`
 
   if [ -e "$user_credentials" ]; then
-    local token=`jq '.key' "$user_credentials" | cut -d '"' -f 2`
-    local token_secret=`jq '.secret' "$user_credentials" | cut -d '"' -f 2`
+    local token=`jq -Mr '.key' "$user_credentials"`
+    local token_secret=`jq -Mr '.secret' "$user_credentials"`
   fi
 
   OAuth-version 1.0
