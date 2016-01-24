@@ -1,0 +1,35 @@
+#!/bin/bash
+
+has_jq=0
+if command -v jq >/dev/null 2>&1; then
+  has_jq=1
+fi
+
+output=
+count=0
+file=
+while getopts 'c:n:f:' arg
+do
+  case ${arg} in
+    c) count="${OPTARG}" ;;
+    n) output="${OPTARG}" ;;
+    f) file="${OPTARG}" ;;
+  esac
+done
+
+if [ -z "$output" ]; then
+  output="$file"
+fi
+
+echo ""
+while IFS='\n' read -r tweet ; do
+  count=$((count+1))
+  size=""
+  if [ -e "$output" ]; then
+    size="($(du -m "$output" | cut -f1)MB)"
+  fi
+  printf "\e[1A\r\e[0KTweets collected: $count $size\n"
+  if [ "$has_jq" -eq 1 ]; then
+    printf "\r\e[0K$(jq -Mj '"@\(.user.screen_name) has just tweeted!"' <<< "$tweet")"
+  fi
+done < "${file:-/dev/stdin}"

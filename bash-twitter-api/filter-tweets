@@ -1,0 +1,13 @@
+#!/bin/bash
+#
+# Streaming API messages types:
+# - Blank lines (keep-alive signals)
+# - Status deletion notices {"delete":...}
+# - Location deletion notices {"scrub_geo":...}
+# - Limit notices {"limit":...}
+# - Stall warnings {"warning":...}
+# - Disconnect messages {"disconnect":...}
+# - Tweets!
+#
+
+grep $'^{"created_at".*}\r*$' < "${1:-/dev/stdin}"
