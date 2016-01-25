@@ -200,5 +200,5 @@ function curlGET {
   curl -sS \
        --get "$URL" \
        --data "$query" \
-       --header "$header"
+       --header "$header" 2>/dev/null
 }
