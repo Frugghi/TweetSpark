@@ -21,15 +21,22 @@ if [ -z "$output" ]; then
   output="$file"
 fi
 
-echo ""
+output_lines=1
+if [ -e "$output" ]; then
+  output_lines=$((output_lines+1))
+fi
+if [ "$has_jq" -eq 1 ]; then
+  output_lines=$((output_lines+1))
+fi
+for i in `seq $output_lines`; do echo; done
+
 while IFS='\n' read -r tweet ; do
   count=$((count+1))
-  size=""
+  printf "\e[${output_lines}A\r\e[0KTweets collected: $count\n"
   if [ -e "$output" ]; then
-    size="($(du -m "$output" | cut -f1)MB)"
+    printf "\r\e[0KFile size: $(du -m "$output" | cut -f1)MB\n"
   fi
-  printf "\e[1A\r\e[0KTweets collected: $count $size\n"
   if [ "$has_jq" -eq 1 ]; then
-    printf "\r\e[0K$(jq -Mj '"@\(.user.screen_name) has just tweeted!"' <<< "$tweet")"
+    printf "\r\e[0K$(jq -Mj '"Last tweeter: @\(.user.screen_name)"' <<< "$tweet")\n"
   fi
 done < "${file:-/dev/stdin}"

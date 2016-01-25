@@ -75,4 +75,8 @@ if [ -e "$output" ]; then
 fi
 
 printf "\r\e[0KInitializing stream..."
-$API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" | filter-tweets | tee -a "$output" | print-streaming-info -c "$count" -n "$output"
+$API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" \
+      | monitor-control-messages \
+      | filter-tweets \
+      | tee -a "$output" \
+      | print-streaming-info -c "$count" -n "$output"
