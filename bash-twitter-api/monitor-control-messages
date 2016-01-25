@@ -15,13 +15,12 @@
 #
 
 while IFS='\n' read -r tweet ; do
-  echo "$tweet"
-
   if grep -q '^{"created_at"' <<< "$tweet"; then
+    echo "$tweet"
     continue
   fi
 
-  printf "Last control message: " >&2
+  printf "\r\e[0KLast control message: " >&2
   if grep -q '^{"disconnect"' <<< "$tweet"; then
     printf "$(jq -Mj '"Disconnect (\(.disconnect.code))"' <<< "$tweet")" >&2
   elif grep -q '^{"warning"' <<< "$tweet"; then
@@ -32,8 +31,9 @@ while IFS='\n' read -r tweet ; do
     printf "Scrub geo" >&2
   elif grep -q '^{"delete"' <<< "$tweet"; then
     printf "Delete" >&2
-  elif [ -z "$tweet" ]; then
+  else
     printf "Keep-alive" >&2
   fi
-  printf "\e[1A" >&2
+
+  echo "$tweet"
 done < "${1:-/dev/stdin}"

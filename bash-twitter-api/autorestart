@@ -2,13 +2,13 @@
 
 seconds=60
 
-echo "----- START ----"
+echo "----- START -----"
 echo
 while "$@" || true; do
   echo
-  echo "----- END ----"
+  echo "----- END -----"
   echo "Run '$1' again in $seconds seconds..."
   sleep $seconds
-  echo "----- START ----"
+  echo "----- START -----"
   echo
 done
