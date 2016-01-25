@@ -14,25 +14,25 @@
 # 12 - Shed load
 #
 
+prexif="Last control message:"
 while IFS='\n' read -r tweet ; do
   if grep -q '^{"created_at"' <<< "$tweet"; then
     echo "$tweet"
     continue
   fi
 
-  printf "\r\e[0KLast control message: " >&2
   if grep -q '^{"disconnect"' <<< "$tweet"; then
-    printf "$(jq -Mj '"Disconnect (\(.disconnect.code))"' <<< "$tweet")" >&2
+    printf "\r\e[0$prexif $(jq -Mj '"Disconnect (\(.disconnect.code))"' <<< "$tweet")" >&2
   elif grep -q '^{"warning"' <<< "$tweet"; then
-    printf "$(jq -Mj '"Warning (\(.warning.code))"' <<< "$tweet")" >&2
+    printf "\r\e[0$prexif $(jq -Mj '"Warning (\(.warning.code))"' <<< "$tweet")" >&2
   elif grep -q '^{"limit"' <<< "$tweet"; then
-    printf "Limit" >&2
+    printf "\r\e[0$prexif Limit" >&2
   elif grep -q '^{"scrub_geo"' <<< "$tweet"; then
-    printf "Scrub geo" >&2
+    printf "\r\e[0$prexif Scrub geo" >&2
   elif grep -q '^{"delete"' <<< "$tweet"; then
-    printf "Delete" >&2
+    printf "\r\e[0$prexif Delete" >&2
   else
-    printf "Keep-alive" >&2
+    printf "\r\e[0$prexif Keep-alive" >&2
   fi
 
   echo "$tweet"

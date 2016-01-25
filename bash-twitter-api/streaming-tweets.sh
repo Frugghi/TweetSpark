@@ -63,7 +63,7 @@ trap "echo" EXIT
 output="$NAME.json"
 count=0
 if [ -e "$output" ]; then
-  printf "\r\e[0KIntegrity checking..."
+  printf "\r\e[0KChecking integrity..."
   tmpfile=`mktemp`
   filter-tweets "$output" > "$tmpfile"
   if cmp -s "$tmpfile" "$output"; then
