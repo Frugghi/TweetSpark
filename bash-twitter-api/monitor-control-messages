@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# Disconnect status codes:
+# 1  - Shutdown
+# 2  - Duplicate stream
+# 3  - Control request
+# 4  - Stall
+# 5  - Normal
+# 6  - Token revoked
+# 7  - Admin logout
+# 9  - Max message limit
+# 10 - Stream exception
+# 11 - Broker Stall
+# 12 - Shed load
+#
+
+while IFS='\n' read -r tweet ; do
+  echo "$tweet"
+
+  if grep -q '^{"created_at"' <<< "$tweet"; then
+    continue
+  fi
+
+  printf "Last control message: " >&2
+  if grep -q '^{"disconnect"' <<< "$tweet"; then
+    printf "$(jq -Mj '"Disconnect (\(.disconnect.code))"' <<< "$tweet")" >&2
+  elif grep -q '^{"warning"' <<< "$tweet"; then
+    printf "$(jq -Mj '"Warning (\(.warning.code))"' <<< "$tweet")" >&2
+  elif grep -q '^{"limit"' <<< "$tweet"; then
+    printf "Limit" >&2
+  elif grep -q '^{"scrub_geo"' <<< "$tweet"; then
+    printf "Scrub geo" >&2
+  elif grep -q '^{"delete"' <<< "$tweet"; then
+    printf "Delete" >&2
+  elif [ -z "$tweet" ]; then
+    printf "Keep-alive" >&2
+  fi
+  printf "\e[1A" >&2
+done < "${1:-/dev/stdin}"
