@@ -22,17 +22,17 @@ while IFS='\n' read -r tweet ; do
   fi
 
   if grep -q '^{"disconnect"' <<< "$tweet"; then
-    printf "\r\e[0$prexif $(jq -Mj '"Disconnect (\(.disconnect.code))"' <<< "$tweet")" >&2
+    printf "\r\e[0K$prexif $(jq -Mj '"Disconnect (\(.disconnect.code))"' <<< "$tweet")" >&2
   elif grep -q '^{"warning"' <<< "$tweet"; then
-    printf "\r\e[0$prexif $(jq -Mj '"Warning (\(.warning.code))"' <<< "$tweet")" >&2
+    printf "\r\e[0K$prexif $(jq -Mj '"Warning (\(.warning.code))"' <<< "$tweet")" >&2
   elif grep -q '^{"limit"' <<< "$tweet"; then
-    printf "\r\e[0$prexif Limit" >&2
+    printf "\r\e[0K$prexif Limit" >&2
   elif grep -q '^{"scrub_geo"' <<< "$tweet"; then
-    printf "\r\e[0$prexif Scrub geo" >&2
+    printf "\r\e[0K$prexif Scrub geo" >&2
   elif grep -q '^{"delete"' <<< "$tweet"; then
-    printf "\r\e[0$prexif Delete" >&2
+    printf "\r\e[0K$prexif Delete" >&2
   else
-    printf "\r\e[0$prexif Keep-alive" >&2
+    printf "\r\e[0K$prexif Keep-alive" >&2
   fi
 
   echo "$tweet"

@@ -6,9 +6,13 @@ echo "----- START -----"
 echo
 while "$@" || true; do
   echo
-  echo "----- END -----"
-  echo "Run '$1' again in $seconds seconds..."
-  sleep $seconds
+  echo "------ END ------"
+  for (( x=$seconds; x>0; x-- ))
+  do
+    printf "\r\e[0KRunning '$1' again in $x seconds..."
+    sleep 1
+  done
+  printf "\r\e[0K$(date +%d-%m-%Y" "%H:%M:%S)\n"
   echo "----- START -----"
   echo
 done
