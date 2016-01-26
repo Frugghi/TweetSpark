@@ -15,6 +15,7 @@ function print-help {
   echo " -f    the users whose Tweets should be delivered on the stream"
   echo " -n    set the stream name, output file will be <name>.json"
   echo " -s    use sample endpoint instead of filter"
+  echo " -i    only check integrity"
   echo ""
   exit 1
 }
@@ -26,12 +27,13 @@ PLACES=""
 FOLLOW=""
 NAME="stream"
 API="stream"
-while getopts 't:l:p:f:n:s' arg
+while getopts 't:l:p:f:n:si' arg
 do
   case ${arg} in
     l) LANG="${OPTARG}" ;;
     n) NAME="${OPTARG}" ;;
     s) API="sample" ;;
+    i) API="check-integrity" ;;
     t) if [ -z "$TRACK" ]; then
         TRACK="${OPTARG}"
        else
@@ -56,8 +58,6 @@ if [ "$API" == "stream" -a -z "$TRACK" -a -z "$FOLLOW" -a -z "$PLACES" ]; then
 fi
 
 # Body
-init-stream-api
-
 trap "echo" EXIT
 
 output="$NAME.json"
@@ -73,6 +73,12 @@ if [ -e "$output" ]; then
   fi
   count=`wc -l "$output" | egrep -o '[0-9]+' | head -n 1`
 fi
+
+if [ "$API" == "check-integrity" ]; then
+  exit 0
+fi
+
+init-stream-api
 
 printf "\r\e[0KInitializing stream..."
 $API -l "$LANG" -t "$TRACK" -f "$FOLLOW" -p "$PLACES" \
