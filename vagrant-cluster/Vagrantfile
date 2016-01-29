@@ -63,6 +63,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         master.vm.synced_folder ".", "/vagrant", disabled: true
         master.vm.provision "file", source: "resources/", destination: "#{resources_dir}"
 		master.vm.provision "file", source: "master/hdfs/", destination: "#{resources_dir}"
+		master.vm.provision "file", source: "master/deploy/", destination: "#{resources_dir}"
         master.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
         master.vm.provider "virtualbox" do |provider|
             provider.name = "master"
