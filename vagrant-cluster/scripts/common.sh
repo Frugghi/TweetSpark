@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #Common
-VAGRANT_RES_DIR=/home/vagrant/resources
+#VAGRANT_RES_DIR=/home/vagrant/resources
 VAGRANT_HDFS_DIR=$VAGRANT_RES_DIR/hdfs
 
 #Java

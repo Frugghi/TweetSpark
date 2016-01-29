@@ -1,5 +1,5 @@
-#!/bin/bash
-source "/home/vagrant/resources/common.sh"
+#!/usr/bin/env bash
+source "$VAGRANT_RES_DIR/common.sh"
 
 while getopts s: option
 do
@@ -12,13 +12,7 @@ done
 function installLocalSpark {
     echo "Installing Spark $SPARK_VERSION from local archive"
     FILE=$VAGRANT_RES_DIR/$SPARK_ARCHIVE
-    tar -xzf $FILE -C /usr/local
-}
-
-function installRemoteSpark {
-    echo "Installing Spark $SPARK_VERSION from remote source"
-    curl -o $VAGRANT_RES_DIR/$SPARK_ARCHIVE -O -L $SPARK_MIRROR_DOWNLOAD
-    tar -xzf $VAGRANT_RES_DIR/$SPARK_ARCHIVE -C /usr/local
+    tar -xf $FILE -C /usr/local
 }
 
 function setupSpark {
@@ -36,7 +30,7 @@ function installSpark {
     if resourceExists $SPARK_ARCHIVE; then
         installLocalSpark
     else
-        installRemoteSpark
+        exit 1
     fi
     ln -s /usr/local/$SPARK_DIR /usr/local/spark
 }

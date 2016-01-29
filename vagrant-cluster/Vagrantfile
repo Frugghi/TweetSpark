@@ -16,6 +16,8 @@ hadoopVersion="2.7.1"
 sparkVersion="1.6.0"
 
 # YOU SHOULDN'T CHANGE ANYTHING FROM HERE
+resources_dir="/home/vagrant/resources"
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     addresses = (0..numSlaves).to_a.map do |i|
         if i < 10
@@ -35,14 +37,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             slave.vm.box = "#{boxName}"
             slave.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
             slave.vm.synced_folder ".", "/vagrant", disabled: true
-            slave.vm.provision "file", source: "resources/", destination: "/home/vagrant/resources"
-            slave.vm.provision "file", source: "scripts/common.sh", destination: "/home/vagrant/resources/common.sh"
+            slave.vm.provision "file", source: "resources/", destination: "#{resources_dir}"
+            slave.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
             slave.vm.provider "virtualbox" do |virtualbox|
               virtualbox.name = "#{nodename}"
               virtualbox.customize ["modifyvm", :id, "--memory", "#{slaveMemory}"]
             end
             slave.vm.network :private_network, ip: "#{ip}"
             slave.vm.hostname = "#{nodename}"
+			slave.vm.provision "shell", inline: "source ~/.bashrc && [ -z \"$VAGRANT_RES_DIR\" ] && echo \"export VAGRANT_RES_DIR=#{resources_dir}\" >> ~/.bashrc"
             slave.vm.provision "shell", path: "scripts/setup-centos.sh"
             slave.vm.provision "shell", path: "scripts/setup-centos-hosts.sh", args: addresses
             slave.vm.provision "shell", path: "scripts/setup-centos-ssh.sh", args: "-a"
@@ -58,14 +61,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         master.vm.box = "#{boxName}"
         master.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
         master.vm.synced_folder ".", "/vagrant", disabled: true
-        master.vm.provision "file", source: "resources/", destination: "/home/vagrant/resources"
-        master.vm.provision "file", source: "scripts/common.sh", destination: "/home/vagrant/resources/common.sh"
+        master.vm.provision "file", source: "resources/", destination: "#{resources_dir}"
+		master.vm.provision "file", source: "master/hdfs/", destination: "#{resources_dir}"
+        master.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
         master.vm.provider "virtualbox" do |provider|
             provider.name = "master"
             provider.customize ["modifyvm", :id, "--memory", "#{masterMemory}"]
         end
         master.vm.network :private_network, ip: addresses[0]
         master.vm.hostname = "master"
+		master.vm.provision "shell", inline: "source ~/.bashrc && [ -z \"$VAGRANT_RES_DIR\" ] && echo \"export VAGRANT_RES_DIR=#{resources_dir}\" >> ~/.bashrc"
         master.vm.provision "shell", path: "scripts/setup-centos.sh"
         master.vm.provision "shell", path: "scripts/setup-centos-hosts.sh", args: addresses
         master.vm.provision "shell", path: "scripts/setup-centos-ssh.sh", args: "-a -i"
@@ -78,6 +83,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         master.vm.provision "shell", path: "scripts/start-services.sh", args: "--hadoop", run: "always"
         master.vm.provision "shell", path: "scripts/initialize-hdfs.sh"
 		master.vm.provision "shell", path: "master/setup-env.sh"
-		master.vm.provision "shell", inline: "chmod +x /home/vagrant/resources/deploy/spark-submit-yarn"
+		master.vm.provision "shell", inline: "chmod +x #{resources_dir}/deploy/spark-submit-yarn"
     end
 end

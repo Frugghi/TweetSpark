@@ -1,5 +1,5 @@
-#!/bin/bash
-source "/home/vagrant/resources/common.sh"
+#!/usr/bin/env bash
+source "$VAGRANT_RES_DIR/common.sh"
 
 while getopts j: option
 do
@@ -12,12 +12,7 @@ done
 function installLocalJava {
     echo "Installing JDK $JAVA_MAJOR_VERSION update $JAVA_BUILD_VERSION from local archive"
     FILE=$VAGRANT_RES_DIR/$JAVA_ARCHIVE
-    tar -xzf $FILE -C /usr/local
-}
-
-function installRemoteJava {
-    echo "Installing JDK $JAVA_MAJOR_VERSION update $JAVA_BUILD_VERSION from remote source"
-    yum install -y `echo $JAVA_ARCHIVE | cut -d '.' -f 1`
+    tar -xf $FILE -C /usr/local
 }
 
 function setupJava {
@@ -39,7 +34,7 @@ function installJava {
     if resourceExists $JAVA_ARCHIVE; then
         installLocalJava
     else
-        installRemoteJava
+        exit 1
     fi
 }
 

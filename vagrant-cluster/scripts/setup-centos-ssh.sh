@@ -1,5 +1,5 @@
-#!/bin/bash
-source "/home/vagrant/resources/common.sh"
+#!/usr/bin/env bash
+source "$VAGRANT_RES_DIR/common.sh"
 
 INSTALL=0
 AUTHORIZE=0

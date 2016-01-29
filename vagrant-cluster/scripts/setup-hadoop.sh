@@ -1,5 +1,5 @@
-#!/bin/bash
-source "/home/vagrant/resources/common.sh"
+#!/usr/bin/env bash
+source "$VAGRANT_RES_DIR/common.sh"
 
 while getopts h: option
 do
@@ -12,13 +12,7 @@ done
 function installLocalHadoop {
     echo "Installing Hadoop $HADOOP_VERSION from local archive"
     FILE=$VAGRANT_RES_DIR/$HADOOP_ARCHIVE
-    tar -xzf $FILE -C /usr/local
-}
-
-function installRemoteHadoop {
-    echo "Installing Hadoop $HADOOP_VERSION from remote source"
-    curl -o $VAGRANT_RES_DIR/$HADOOP_ARCHIVE -O -L $HADOOP_MIRROR_DOWNLOAD
-    tar -xzf $VAGRANT_RES_DIR/$HADOOP_ARCHIVE -C /usr/local
+    tar -xf $FILE -C /usr/local
 }
 
 function setupHadoop {
@@ -44,7 +38,7 @@ function installHadoop {
     if resourceExists $HADOOP_ARCHIVE; then
         installLocalHadoop
     else
-        installRemoteHadoop
+        exit 1
     fi
     ln -s /usr/local/$HADOOP_DIR /usr/local/hadoop
 }
