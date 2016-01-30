@@ -22,7 +22,7 @@
 - Run `streaming-tweets.sh` to query the Streaming API
 
 #### Notes
-The script uses [application-only authentication](https://dev.twitter.com/oauth/application-only).
+The script uses [application-only authentication](https://dev.twitter.com/oauth/application-only) and [application owner access token](https://dev.twitter.com/oauth/overview/application-owner-access-tokens).
 
 ### Vagrant cluster
 - Download and install [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
@@ -32,6 +32,7 @@ The script uses [application-only authentication](https://dev.twitter.com/oauth/
 - Download [Hadoop](http://hadoop.apache.org/releases.html)
 - Download [Spark](http://spark.apache.org/downloads.html)
 - Put the downloaded files into `vagrant-cluster/resources`
+- Rename `settings.yml.sample` to `settings.yml`
 - Run `vagrant up` to create the cluster
 - Run `vagrant ssh master` to SSH into `master` node
 - Run `vagrant destroy` to destroy the cluster
