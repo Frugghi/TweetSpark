@@ -20,7 +20,7 @@ echo "The applicationId is $application_id"
 
 read -r -p "Do you wanna see the log? [y/N] " response
 case $response in
-    [yY]) yarn logs -applicationId "$application_id"
+    [yY]) yarn logs -applicationId "$application_id" | less
           echo "The applicationId is $application_id" ;;
 esac
 
@@ -54,6 +54,6 @@ if [ $get_result -eq 1 ]; then
                 is_content=1
             fi
         done
-    }
+    } | less
     echo "The applicationId is $application_id"
 fi

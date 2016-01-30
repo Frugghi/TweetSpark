@@ -30,7 +30,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             "#{baseAddress}.#{i}"
         end
     end
-        
+    
     addresses[1, numSlaves].each do |ip|
         i = addresses.index(ip)
         nodename = "slave#{i}"
