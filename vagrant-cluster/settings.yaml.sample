@@ -1,0 +1,24 @@
+
+# Vagrant file settings
+
+java:
+  version: 7
+  update: 79
+  
+hadoop:
+  version: 2.7.1
+  
+spark:
+  version: 1.6.0
+  
+box:
+  os: centos7
+  gui: false
+  base_address: 10.211.55
+  
+master:
+  memory: 2048
+  
+slaves:
+  count: 3
+  memory: 2048

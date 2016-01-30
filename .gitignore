@@ -123,3 +123,4 @@ gradle-app.setting
 acceptance_config.yml
 boxes/*
 .vagrant
+vagrant-cluster/settings.yml

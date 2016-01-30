@@ -1,22 +1,24 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
+require 'yaml'
 
 Vagrant.require_version ">= 1.4.3"
 VAGRANTFILE_API_VERSION = "2"
 
-# Configuration
-numSlaves = 3
-masterMemory = 2048
-slaveMemory = 2048
-baseAddress = "10.211.55"
+settings = YAML.load_file 'settings.yml'
 
-boxName="centos7"
-javaVersion = "7u79"
-hadoopVersion="2.7.1"
-sparkVersion="1.6.0"
+numSlaves = settings['slaves']['count']
+masterMemory = settings['master']['memory']
+slaveMemory = settings['slaves']['memory']
+baseAddress = settings['box']['base_address']
 
-# YOU SHOULDN'T CHANGE ANYTHING FROM HERE
+boxName = settings['box']['os']
+javaVersion = "#{settings['java']['version']}u#{settings['java']['update']}"
+hadoopVersion = settings['hadoop']['version']
+sparkVersion = settings['spark']['version']
+
 resources_dir="/home/vagrant/resources"
+gui = settings['box']['gui']
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     addresses = (0..numSlaves).to_a.map do |i|
@@ -40,6 +42,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             slave.vm.provision "file", source: "resources/", destination: "#{resources_dir}"
             slave.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
             slave.vm.provider "virtualbox" do |virtualbox|
+			  virtualbox.gui = gui
               virtualbox.name = "#{nodename}"
               virtualbox.customize ["modifyvm", :id, "--memory", "#{slaveMemory}"]
             end
@@ -65,9 +68,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		master.vm.provision "file", source: "master/hdfs/", destination: "#{resources_dir}"
 		master.vm.provision "file", source: "master/deploy/", destination: "#{resources_dir}"
         master.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
-        master.vm.provider "virtualbox" do |provider|
-            provider.name = "master"
-            provider.customize ["modifyvm", :id, "--memory", "#{masterMemory}"]
+        master.vm.provider "virtualbox" do |virtualbox|
+			virtualbox.gui = gui
+            virtualbox.name = "master"
+            virtualbox.customize ["modifyvm", :id, "--memory", "#{masterMemory}"]
         end
         master.vm.network :private_network, ip: addresses[0]
         master.vm.hostname = "master"
