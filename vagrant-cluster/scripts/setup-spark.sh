@@ -17,8 +17,8 @@ function installLocalSpark {
 
 function setupSpark {
     echo "Copying over Spark configuration files"
-    cp -f $VAGRANT_RES_DIR/spark/slaves $SPARK_CONF_DIR/slaves
-    cp -f $VAGRANT_RES_DIR/spark/spark-env.sh $SPARK_CONF_DIR/spark-env.sh
+    cp -f $VAGRANT_RES_DIR/spark/slaves $SPARK_CONF/slaves
+    cp -f $VAGRANT_RES_DIR/spark/spark-env.sh $SPARK_CONF/spark-env.sh
 }
 
 function setupEnvVars {
@@ -32,7 +32,7 @@ function installSpark {
     else
         exit 1
     fi
-    ln -s /usr/local/$SPARK_DIR /usr/local/spark
+    ln -s /usr/local/$SPARK_DIR $SPARK_PREFIX
 }
 
 echo "Setup Spark"

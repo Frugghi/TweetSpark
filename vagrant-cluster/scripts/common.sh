@@ -29,8 +29,9 @@ function setupHadoopVariables {
 }
 
 #Spark
+SPARK_PREFIX=/usr/local/spark
+SPARK_CONF=$SPARK_PREFIX/conf
 SPARK_RES_DIR=$VAGRANT_RES_DIR/spark
-SPARK_CONF_DIR=/usr/local/spark/conf
 
 function setupSparkVariables {
     SPARK_VERSION="$1"

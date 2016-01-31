@@ -40,7 +40,7 @@ function installHadoop {
     else
         exit 1
     fi
-    ln -s /usr/local/$HADOOP_DIR /usr/local/hadoop
+    ln -s /usr/local/$HADOOP_DIR $HADOOP_PREFIX
 }
 
 
