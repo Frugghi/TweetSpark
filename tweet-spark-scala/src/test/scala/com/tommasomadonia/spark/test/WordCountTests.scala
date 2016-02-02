@@ -32,6 +32,29 @@ class WordCountTests extends FlatSpec with SparkSQLSpec with GivenWhenThen with 
     )
   }
 
+  "A tweet with wrong indices" should "be counted correctly" in {
+    Given("a DataFrame")
+    val dataFrame = sqlContext.read.json("test/newline.json")
+
+    When("count words")
+    val wordCounts = WordCount.count(sparkContext, dataFrame).collect().toSet
+
+    Then("word counted")
+    wordCounts shouldEqual Set(
+      ("Fonte", 1),
+      ("Corriere", 1),
+      ("Fiorentino", 1),
+      ("https://t.co/cxx1xxxxxJ", 1),
+      ("#pittiuomo", 1),
+      ("#firenze", 1),
+      ("#StarWars", 1),
+      ("#ilvolo", 1),
+      ("12", 1),
+      ("01", 1),
+      ("2016", 1)
+    )
+  }
+
   "A collection of tweets" should "be counted" in {
     Given("a DataFrame")
     val dataFrame = sqlContext.read.json("test/random.json")
@@ -53,6 +76,19 @@ class WordCountTests extends FlatSpec with SparkSQLSpec with GivenWhenThen with 
       ("Ti", 1),
       ("odio", 1),
       ("caro", 1)
+    )
+  }
+
+  "A collection of tweets" should "be counted and ordered" in {
+    Given("a DataFrame")
+    val dataFrame = sqlContext.read.json("test/random.json")
+
+    When("count top 1 word")
+    val wordCounts = WordCount.count(sparkContext, dataFrame, 1)
+
+    Then("the top 1 word")
+    wordCounts shouldEqual Array(
+      ("https://t.co/3xxxFxxxx1", 2)
     )
   }
 
