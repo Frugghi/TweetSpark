@@ -14,30 +14,34 @@ import com.tommasomadonia.spark.dataframe_extension._
 object WordCount {
   type WordCountTuple = (String, Int)
 
-  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean, hours: Int): RDD[(String, List[WordCountTuple])] = {
-    def moduloFloor(number: Int, modulo: Int) = number - (number % modulo)
+  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean, hours: Int): RDD[(String, List[WordCountTuple])] = (sparkContext, dataFrame) match {
+    case (sparkContext, dataFrame) if !dataFrame.columns.contains("user") => sparkContext.emptyRDD[(String, List[WordCountTuple])]
+    case (_, dataFrame) => {
 
-    val timeSliceFunction: (String => String) = (timestamp: String) => {
-      val inputFormat = DateTimeFormat.forPattern("EEE MMM dd HH:mm:ss Z yyyy").withOffsetParsed()
-      val outputFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm")
-      val date = inputFormat.parseDateTime(timestamp)
-      val startDate = date.withHour(moduloFloor(date.getHourOfDay, hours)).withMinuteOfHour(0)
-      startDate.toString(outputFormat) + " - " + (startDate + hours.hours - 1.minutes).toString(outputFormat)
+      def moduloFloor(number: Int, modulo: Int) = number - (number % modulo)
+
+      val timeSliceFunction: (String => String) = (timestamp: String) => {
+        val inputFormat = DateTimeFormat.forPattern("EEE MMM dd HH:mm:ss Z yyyy").withOffsetParsed()
+        val outputFormat = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm")
+        val date = inputFormat.parseDateTime(timestamp)
+        val startDate = date.withHour(moduloFloor(date.getHourOfDay, hours)).withMinuteOfHour(0)
+        startDate.toString(outputFormat) + " - " + (startDate + hours.hours - 1.minutes).toString(outputFormat)
+      }
+
+      val timeSlice = udf(timeSliceFunction)
+      dataFrame
+        .withColumn("time_slice", timeSlice(col("created_at")))
+        .filterRetweets(ignoreRetweets)
+        .coalesceRetweets()
+        .select("tweet_text", "user.name", "user.screen_name", "hashtags", "media", "urls", "user_mentions", "time_slice")
+        .flatMap(row => tokenize(row).map(word => (row.getAs[String]("time_slice"), word)))
+        .map(word => word -> 1)
+        .reduceByKey(_ + _)
+        .map({ case ((timeSlice, word), count) => (timeSlice, (word, count)) })
+        .groupByKey()
+        .sortByKey()
+        .map({ case (key, wordCount) => key -> wordCount.toList.sortBy(-_._2) })
     }
-
-    val timeSlice = udf(timeSliceFunction)
-    dataFrame
-      .withColumn("time_slice", timeSlice(col("created_at")))
-      .filterRetweets(ignoreRetweets)
-      .coalesceRetweets()
-      .select("tweet_text", "user.name", "user.screen_name", "hashtags", "media", "urls", "user_mentions", "time_slice")
-      .flatMap(row => tokenize(row).map(word => (row.getAs[String]("time_slice"), word)))
-      .map(word => word -> 1)
-      .reduceByKey(_ + _)
-      .map({ case ((timeSlice, word), count) => (timeSlice, (word, count)) })
-      .groupByKey()
-      .sortByKey()
-      .map({ case (key, wordCount) => key -> wordCount.toList.sortBy(-_._2) })
   }
 
   def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean = false, hours: Int, limit: Int): RDD[(String, List[WordCountTuple])] = {
@@ -45,7 +49,7 @@ object WordCount {
   }
 
   def count(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean): RDD[WordCountTuple] = (sparkContext, dataFrame) match {
-    case (sparkContext, dataFrame) if !dataFrame.columns.contains("text") || !dataFrame.columns.contains("user") || !dataFrame.columns.contains("entities") => sparkContext.emptyRDD[WordCountTuple]
+    case (sparkContext, dataFrame) if !dataFrame.columns.contains("user") => sparkContext.emptyRDD[WordCountTuple]
     case (_, dataFrame) => {
       dataFrame
         .filterRetweets(ignoreRetweets)
