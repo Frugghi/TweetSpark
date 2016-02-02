@@ -3,25 +3,62 @@ package com.tommasomadonia.spark.test
 import com.tommasomadonia.spark.WordCount
 import org.scalatest.{Matchers, GivenWhenThen, FlatSpec}
 
-class WordCountTests extends FlatSpec with SparkSQLSpec with GivenWhenThen with Matchers {
+class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen with Matchers {
 
   "Empty JSON" should "have no words" in {
     Given("an empty DataFrame")
-    val dataFrame = sqlContext.read.json("test/empty.json")
+    val dataFrame = dataFrameReader.json("test/empty.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame).collect()
+    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect()
 
     Then("word counts should be empty")
     wordCounts shouldBe empty
   }
 
-  "A tweet" should "ignore the emojis" in {
-    Given("a DataFrame")
-    val dataFrame = sqlContext.read.json("test/emoji.json")
+  "Ignored retweets" should "have no words" in {
+    Given("an empty DataFrame")
+    val dataFrame = dataFrameReader.json("test/retweet.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame).collect().toSet
+    val wordCounts = WordCount.count(sparkContext, dataFrame, true).collect()
+
+    Then("word counts should be empty")
+    wordCounts shouldBe empty
+  }
+
+  "Retweets" should "be coalesced" in {
+    Given("an empty DataFrame")
+    val dataFrame = dataFrameReader.json("test/retweet.json")
+
+    When("count words")
+    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
+
+    Then("word counts should be empty")
+    wordCounts shouldEqual Set(
+      ("#Disney", 1),
+      ("e", 2),
+      ("OpenBionics", 1),
+      ("producono", 1),
+      ("protesi", 1),
+      ("per", 1),
+      ("bambini", 1),
+      ("ispirate", 1),
+      ("a", 1),
+      ("#IronMan", 1),
+      ("#Frozen", 1),
+      ("#StarWars", 1),
+      ("https://t.co/DxxxKxxxxo", 1),
+      ("https://t.co/9xCxxPxxxR", 1)
+    )
+  }
+
+  "A tweet" should "ignore the emojis" in {
+    Given("a DataFrame")
+    val dataFrame = dataFrameReader.json("test/emoji.json")
+
+    When("count words")
+    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
 
     Then("word counted")
     wordCounts shouldEqual Set(
@@ -34,10 +71,10 @@ class WordCountTests extends FlatSpec with SparkSQLSpec with GivenWhenThen with 
 
   "A tweet with wrong indices" should "be counted correctly" in {
     Given("a DataFrame")
-    val dataFrame = sqlContext.read.json("test/newline.json")
+    val dataFrame = dataFrameReader.json("test/newline.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame).collect().toSet
+    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
 
     Then("word counted")
     wordCounts shouldEqual Set(
@@ -57,10 +94,10 @@ class WordCountTests extends FlatSpec with SparkSQLSpec with GivenWhenThen with 
 
   "A collection of tweets" should "be counted" in {
     Given("a DataFrame")
-    val dataFrame = sqlContext.read.json("test/random.json")
+    val dataFrame = dataFrameReader.json("test/random.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame).collect().toSet
+    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
 
     Then("word counted")
     wordCounts shouldEqual Set(
@@ -81,10 +118,10 @@ class WordCountTests extends FlatSpec with SparkSQLSpec with GivenWhenThen with 
 
   "A collection of tweets" should "be counted and ordered" in {
     Given("a DataFrame")
-    val dataFrame = sqlContext.read.json("test/random.json")
+    val dataFrame = dataFrameReader.json("test/random.json")
 
     When("count top 1 word")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, 1)
+    val wordCounts = WordCount.count(sparkContext, dataFrame, false, 1)
 
     Then("the top 1 word")
     wordCounts shouldEqual Array(

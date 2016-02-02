@@ -11,15 +11,15 @@ trait SparkSQLSpec extends SparkSpec {
   def sqlContext = _sqlContext
 
   override def beforeAll(): Unit = {
-  super.beforeAll()
+    super.beforeAll()
 
     _sqlContext = new SQLContext(sparkContext)
-}
+  }
 
   override def afterAll(): Unit = {
     _sqlContext = null
 
-  super.afterAll()
-}
+    super.afterAll()
+  }
 
 }

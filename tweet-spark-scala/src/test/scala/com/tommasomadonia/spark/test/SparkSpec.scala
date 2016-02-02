@@ -19,6 +19,7 @@ trait SparkSpec extends BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+
     _sparkContext = new SparkContext(conf)
   }
 

@@ -1,20 +1,20 @@
 package com.tommasomadonia.spark
 
-import java.util.Locale
-
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row}
+import org.apache.spark.sql.{DataFrame, Row, Column}
 import org.apache.spark.sql.functions._
 
 import scala.collection.mutable.{ArrayBuffer, StringBuilder}
 
 import com.github.nscala_time.time.Imports._
 
+import com.tommasomadonia.spark.dataframe_extension._
+
 object WordCount {
   type WordCountTuple = (String, Int)
 
-  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, hours: Int): RDD[(String, List[WordCountTuple])] = {
+  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean, hours: Int): RDD[(String, List[WordCountTuple])] = {
     def moduloFloor(number: Int, modulo: Int) = number - (number % modulo)
 
     val timeSliceFunction: (String => String) = (timestamp: String) => {
@@ -26,9 +26,11 @@ object WordCount {
     }
 
     val timeSlice = udf(timeSliceFunction)
-    val timeSlicedDataFrame = dataFrame.withColumn("time_slice", timeSlice(col("created_at")))
-    timeSlicedDataFrame
-      .select("text", "user.name", "user.screen_name", "entities.hashtags", "entities.media", "entities.urls", "entities.user_mentions", "time_slice")
+    dataFrame
+      .withColumn("time_slice", timeSlice(col("created_at")))
+      .filterRetweets(ignoreRetweets)
+      .coalesceRetweets()
+      .select("tweet_text", "user.name", "user.screen_name", "hashtags", "media", "urls", "user_mentions", "time_slice")
       .flatMap(row => tokenize(row).map(word => (row.getAs[String]("time_slice"), word)))
       .map(word => word -> 1)
       .reduceByKey(_ + _)
@@ -38,23 +40,25 @@ object WordCount {
       .map({ case (key, wordCount) => key -> wordCount.toList.sortBy(-_._2) })
   }
 
-  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, hours: Int, limit: Int): RDD[(String, List[WordCountTuple])] = {
-    countInTime(sparkContext, dataFrame, hours).map({ case (key, wordCount) => key -> wordCount.take(limit) })
+  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean = false, hours: Int, limit: Int): RDD[(String, List[WordCountTuple])] = {
+    countInTime(sparkContext, dataFrame, ignoreRetweets, hours).map({ case (key, wordCount) => key -> wordCount.take(limit) })
   }
 
-  def count(sparkContext: SparkContext, dataFrame: DataFrame): RDD[WordCountTuple] = (sparkContext, dataFrame) match {
+  def count(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean): RDD[WordCountTuple] = (sparkContext, dataFrame) match {
     case (sparkContext, dataFrame) if !dataFrame.columns.contains("text") || !dataFrame.columns.contains("user") || !dataFrame.columns.contains("entities") => sparkContext.emptyRDD[WordCountTuple]
     case (_, dataFrame) => {
       dataFrame
-        .select("text", "user.name", "user.screen_name", "entities.hashtags", "entities.media", "entities.urls", "entities.user_mentions")
+        .filterRetweets(ignoreRetweets)
+        .coalesceRetweets()
+        .select("tweet_text", "user.name", "user.screen_name", "hashtags", "media", "urls", "user_mentions")
         .flatMap(row => tokenize(row))
         .map(word => word -> 1)
         .reduceByKey(_ + _)
     }
   }
 
-  def count(sparkContext: SparkContext, dataFrame: DataFrame, limit: Int): Array[WordCountTuple] = {
-    count(sparkContext, dataFrame).top(limit)(Ordering[Long].on(x => x._2))
+  def count(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean = false, limit: Int): Array[WordCountTuple] = {
+    count(sparkContext, dataFrame, ignoreRetweets).top(limit)(Ordering[Long].on(x => x._2))
   }
 
   private[this] def extractIndices(row: Row, fieldNames: String*): List[(Long, Long)] = {
@@ -75,7 +79,7 @@ object WordCount {
 
   private[this] def tokenize(row: Row): TraversableOnce[String] = {
     val indices = extractIndices(row, "hashtags", "media", "urls", "user_mentions").sortWith(_._1 > _._1)
-    val tweet = row.getAs[String]("text")
+    val tweet = row.getAs[String]("tweet_text")
     val text = new StringBuilder(tweet.replaceAll("[^\u0000-\uFFFF]", " ").replaceAll("\\n", " "))
     val token = ArrayBuffer.empty[String]
     for (index <- indices) {
@@ -106,7 +110,7 @@ object WordCount {
       text.delete(startIndex, endIndex)
     }
     token ++= text.toString.trim.split("\\W+")
-    token
+    token.filter(_.nonEmpty).filterNot(Set("…").contains(_))
   }
 
 }
