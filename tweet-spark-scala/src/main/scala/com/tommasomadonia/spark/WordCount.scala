@@ -14,10 +14,9 @@ import com.tommasomadonia.spark.dataframe_extension._
 object WordCount {
   type WordCountTuple = (String, Int)
 
-  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean, hours: Int): RDD[(String, List[WordCountTuple])] = (sparkContext, dataFrame) match {
-    case (sparkContext, dataFrame) if !dataFrame.columns.contains("user") => sparkContext.emptyRDD[(String, List[WordCountTuple])]
-    case (_, dataFrame) => {
-
+  def countInTime(dataFrame: DataFrame, ignoreRetweets: Boolean, hours: Int): RDD[(String, List[WordCountTuple])] = dataFrame match {
+    case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.sparkContext.emptyRDD[(String, List[WordCountTuple])]
+    case dataFrame => {
       def moduloFloor(number: Int, modulo: Int) = number - (number % modulo)
 
       val timeSliceFunction: (String => String) = (timestamp: String) => {
@@ -44,13 +43,13 @@ object WordCount {
     }
   }
 
-  def countInTime(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean = false, hours: Int, limit: Int): RDD[(String, List[WordCountTuple])] = {
-    countInTime(sparkContext, dataFrame, ignoreRetweets, hours).map({ case (key, wordCount) => key -> wordCount.take(limit) })
+  def countInTime(dataFrame: DataFrame, ignoreRetweets: Boolean = false, hours: Int, limit: Int): RDD[(String, List[WordCountTuple])] = {
+    countInTime(dataFrame, ignoreRetweets, hours).map({ case (key, wordCount) => key -> wordCount.take(limit) })
   }
 
-  def count(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean): RDD[WordCountTuple] = (sparkContext, dataFrame) match {
-    case (sparkContext, dataFrame) if !dataFrame.columns.contains("user") => sparkContext.emptyRDD[WordCountTuple]
-    case (_, dataFrame) => {
+  def count(dataFrame: DataFrame, ignoreRetweets: Boolean): RDD[WordCountTuple] = dataFrame match {
+    case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.sparkContext.emptyRDD[WordCountTuple]
+    case dataFrame => {
       dataFrame
         .filterRetweets(ignoreRetweets)
         .coalesceRetweets()
@@ -61,8 +60,8 @@ object WordCount {
     }
   }
 
-  def count(sparkContext: SparkContext, dataFrame: DataFrame, ignoreRetweets: Boolean = false, limit: Int): Array[WordCountTuple] = {
-    count(sparkContext, dataFrame, ignoreRetweets).top(limit)(Ordering[Long].on(x => x._2))
+  def count(dataFrame: DataFrame, ignoreRetweets: Boolean = false, limit: Int): Array[WordCountTuple] = {
+    count(dataFrame, ignoreRetweets).top(limit)(Ordering[Long].on(x => x._2))
   }
 
   private[this] def extractIndices(row: Row, fieldNames: String*): List[(Long, Long)] = {

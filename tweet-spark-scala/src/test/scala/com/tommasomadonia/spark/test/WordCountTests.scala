@@ -10,7 +10,7 @@ class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen wit
     val dataFrame = dataFrameReader.json("test/empty.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect()
+    val wordCounts = WordCount.count(dataFrame, false).collect()
 
     Then("word counts should be empty")
     wordCounts shouldBe empty
@@ -21,7 +21,7 @@ class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen wit
     val dataFrame = dataFrameReader.json("test/retweet.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, true).collect()
+    val wordCounts = WordCount.count(dataFrame, true).collect()
 
     Then("word counts should be empty")
     wordCounts shouldBe empty
@@ -32,7 +32,7 @@ class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen wit
     val dataFrame = dataFrameReader.json("test/retweet.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
+    val wordCounts = WordCount.count(dataFrame, false).collect().toSet
 
     Then("word counts should be empty")
     wordCounts shouldEqual Set(
@@ -58,7 +58,7 @@ class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen wit
     val dataFrame = dataFrameReader.json("test/emoji.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
+    val wordCounts = WordCount.count(dataFrame, false).collect().toSet
 
     Then("word counted")
     wordCounts shouldEqual Set(
@@ -74,7 +74,7 @@ class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen wit
     val dataFrame = dataFrameReader.json("test/newline.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
+    val wordCounts = WordCount.count(dataFrame, false).collect().toSet
 
     Then("word counted")
     wordCounts shouldEqual Set(
@@ -97,7 +97,7 @@ class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen wit
     val dataFrame = dataFrameReader.json("test/random.json")
 
     When("count words")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, false).collect().toSet
+    val wordCounts = WordCount.count(dataFrame, false).collect().toSet
 
     Then("word counted")
     wordCounts shouldEqual Set(
@@ -121,7 +121,7 @@ class WordCountTests extends FlatSpec with JSONSchemaSpec with GivenWhenThen wit
     val dataFrame = dataFrameReader.json("test/random.json")
 
     When("count top 1 word")
-    val wordCounts = WordCount.count(sparkContext, dataFrame, false, 1)
+    val wordCounts = WordCount.count(dataFrame, false, 1)
 
     Then("the top 1 word")
     wordCounts shouldEqual Array(

@@ -54,7 +54,7 @@ object TwitterAnalyzer {
     measureTime {
       val limit = 20
       printlnTitle(s"Top $limit tweeted words")
-      WordCount.count(sparkContext, dataFrame, false, limit).foreach(println)
+      WordCount.count(dataFrame, false, limit).foreach(println)
     }
 
     // Find more tweeted words in time
@@ -62,7 +62,7 @@ object TwitterAnalyzer {
       val limit = 20
       val hours = 6
       printlnTitle(s"Top $limit tweeted words/" + hours + "h")
-      WordCount.countInTime(sparkContext, dataFrame, true, hours, limit).collect
+      WordCount.countInTime(dataFrame, true, hours, limit).collect
         .foreach({ case (key, list) =>
           println(s"$key:")
           list.foreach(println)
