@@ -1,0 +1,63 @@
+plugins {
+    id 'scala'
+    id 'org.hidetake.ssh' version '1.1.4'
+    id 'com.github.maiflai.scalatest' version '0.11'
+}
+
+group 'com.tommasomadonia.spark'
+version '1.0-SNAPSHOT'
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+remotes {
+    master {
+        host = '10.211.55.100'
+        user = 'root'
+        knownHosts = allowAnyHosts
+        identity = file("${rootDir}/../vagrant-cluster/resources/ssh/vagrant")
+    }
+}
+
+jar {
+    archiveName = "${project.name}.jar"
+    manifest {
+        attributes 'Implementation-Title': 'Tweet Spark',
+                'Implementation-Version': version,
+                'Main-Class': 'com.tommasomadonia.spark.TwitterAnalyzer',
+                'Built-By': System.getProperty('user.name'),
+                'Built-JDK': System.getProperty('java.version'),
+                'Source-Compatibility': sourceCompatibility,
+                'Target-Compatibility': targetCompatibility
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile group: 'org.apache.spark', name: 'spark-core_2.10', version: '1.6.0'
+    compile group: 'org.apache.spark', name: 'spark-sql_2.10', version: '1.6.0'
+    compile group: 'org.apache.hadoop', name: 'hadoop-client', version: '2.7.1'
+    testCompile group: 'org.scalactic', name: 'scalactic_2.10', version: '2.2.6'
+    testCompile group: 'org.scalatest', name: 'scalatest_2.10', version: '2.2.6'
+    testRuntime 'org.pegdown:pegdown:1.1.0'
+}
+
+
+test {
+    maxParallelForks = 1
+}
+
+task deploy(dependsOn : 'jar') << {
+    ssh.run {
+        session(remotes.master) {
+            put from: "${buildDir}/libs/${jar.archiveName}", into: '/home/vagrant/resources/deploy'
+        }
+    }
+    copy {
+        from "${buildDir}/libs/${jar.archiveName}"
+        into "${rootDir}/../vagrant-cluster/master/deploy"
+    }
+}
