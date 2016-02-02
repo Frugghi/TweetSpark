@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Taken from https://gist.github.com/mikesmullin/6401258
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+watch_file="$DIR/$1"
+args="$@"
+
+function update_sha {
+  sha=`ls -lR --time-style=full-iso "$watch_file" | sha1sum`
+}
+
+function run {
+  echo "Running..."
+  spark-submit-yarn $args
+  echo "Resumed watching..."
+}
+
+function compare {
+  update_sha
+  if [[ $sha != $previous_sha ]] ; then
+    echo "Change detected..."
+	previous_sha=$sha
+    run
+  fi
+}
+
+trap run SIGINT
+trap exit SIGQUIT
+
+update_sha
+previous_sha=$sha
+
+echo -e "Press Ctrl+C to force run, Ctrl+\\ to exit"
+echo -e "Watching \"$watch_file\""
+while true; do
+  compare
+  sleep 1
+done

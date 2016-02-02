@@ -89,5 +89,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         master.vm.provision "shell", path: "scripts/initialize-hdfs.sh"
 		master.vm.provision "shell", path: "master/setup-env.sh"
 		master.vm.provision "shell", inline: "chmod +x #{resources_dir}/deploy/spark-submit-yarn"
+		master.vm.provision "shell", inline: "chmod +x #{resources_dir}/deploy/auto-deploy"
     end
 end
