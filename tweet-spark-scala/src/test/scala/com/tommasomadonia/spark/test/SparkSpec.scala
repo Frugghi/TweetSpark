@@ -1,5 +1,6 @@
 package com.tommasomadonia.spark.test
 
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark._
 import org.scalatest._
 
@@ -20,7 +21,12 @@ trait SparkSpec extends BeforeAndAfterAll {
   override def beforeAll(): Unit = {
     super.beforeAll()
 
+    Logger.getLogger("org").setLevel(Level.ERROR)
+    Logger.getLogger("akka").setLevel(Level.ERROR)
+    Logger.getLogger("Remoting").setLevel(Level.ERROR)
+
     _sparkContext = new SparkContext(conf)
+    _sparkContext.setLogLevel("ERROR")
   }
 
   override def afterAll(): Unit = {
