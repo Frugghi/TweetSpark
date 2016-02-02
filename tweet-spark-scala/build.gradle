@@ -26,7 +26,6 @@ jar {
                 'Implementation-Version': version,
                 'Main-Class': 'com.tommasomadonia.spark.TwitterAnalyzer',
                 'Built-By': System.getProperty('user.name'),
-                'Built-JDK': System.getProperty('java.version'),
                 'Source-Compatibility': sourceCompatibility,
                 'Target-Compatibility': targetCompatibility
     }
