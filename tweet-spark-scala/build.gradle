@@ -19,7 +19,14 @@ remotes {
     }
 }
 
+configurations {
+    libraries
+}
+
 jar {
+    doFirst {
+        from { configurations.libraries.collect { it.isDirectory() ? it : zipTree(it) } }
+    }
     archiveName = "${project.name}.jar"
     manifest {
         attributes 'Implementation-Title': 'Tweet Spark',
@@ -39,9 +46,12 @@ dependencies {
     compile group: 'org.apache.spark', name: 'spark-core_2.10', version: '1.6.0'
     compile group: 'org.apache.spark', name: 'spark-sql_2.10', version: '1.6.0'
     compile group: 'org.apache.hadoop', name: 'hadoop-client', version: '2.7.1'
+    libraries group: 'com.github.nscala-time', name: 'nscala-time_2.10', version: '2.8.0'
     testCompile group: 'org.scalactic', name: 'scalactic_2.10', version: '2.2.6'
     testCompile group: 'org.scalatest', name: 'scalatest_2.10', version: '2.2.6'
     testRuntime 'org.pegdown:pegdown:1.1.0'
+
+    configurations.compile.extendsFrom(configurations.libraries)
 }
 
 

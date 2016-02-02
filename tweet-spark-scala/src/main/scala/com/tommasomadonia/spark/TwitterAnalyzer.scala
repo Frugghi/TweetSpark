@@ -47,7 +47,7 @@ object TwitterAnalyzer {
     measureTime {
       val limit = 20
       printlnTitle(s"Top $limit active tweeters")
-      ActiveTweeters.find(limit, sqlContext, tweetsTable).collect().foreach(println)
+      ActiveTweeters.find(limit, sqlContext, tweetsTable).collect.foreach(println)
     }
 
     // Find more tweeted words
@@ -55,6 +55,18 @@ object TwitterAnalyzer {
       val limit = 20
       printlnTitle(s"Top $limit tweeted words")
       WordCount.count(sparkContext, dataFrame, limit).foreach(println)
+    }
+
+    // Find more tweeted words in time
+    measureTime {
+      val limit = 20
+      val hours = 6
+      printlnTitle(s"Top $limit tweeted words/" + hours + "h")
+      WordCount.countInTime(sparkContext, dataFrame, hours, limit).collect
+        .foreach({ case (key, list) =>
+          println(s"$key:")
+          list.foreach(println)
+      })
     }
 
     sparkContext.stop()
