@@ -110,7 +110,7 @@ object WordCount {
       text.delete(startIndex, endIndex)
     }
     token ++= text.toString.trim.split("\\W+")
-    token.filter(_.nonEmpty).filterNot(Set("…").contains(_))
+    token.filter(_.nonEmpty).filterNot(Set("\u2026").contains(_))
   }
 
 }

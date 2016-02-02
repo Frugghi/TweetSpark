@@ -3,9 +3,9 @@ package com.tommasomadonia.spark
 import org.apache.spark.sql.{Row, DataFrame}
 import org.apache.spark.sql.functions._
 
-package object dataframe_extension {
+private case class MediaIndices(indices: Array[Long])
 
-  case class MediaIndices(indices: Array[Long])
+package object dataframe_extension {
 
   implicit class TweetDataFrame(dataFrame: DataFrame) {
 
@@ -13,7 +13,11 @@ package object dataframe_extension {
 
     def coalesceRetweets(): DataFrame = {
       val extractIndicesFunction: (Seq[Row] => Seq[MediaIndices]) = (elements: Seq[Row]) => {
-        elements.map(row => MediaIndices(row.getAs[Seq[Long]]("indices").toArray))
+        if (elements != null) {
+          elements.map(row => MediaIndices(row.getAs[Seq[Long]]("indices").toArray))
+        } else {
+          Array[MediaIndices]()
+        }
       }
 
       val extractIndices = udf(extractIndicesFunction)
