@@ -5,6 +5,8 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkContext, SparkConf}
 
+import com.tommasomadonia.spark.dataframe_extension._
+
 object TwitterAnalyzer {
 
   def main(args: Array[String]) {
@@ -42,19 +44,33 @@ object TwitterAnalyzer {
     dataFrame.registerTempTable(tweetsTable)
     printlnTitle("Tweet table schema")
     dataFrame.printSchema()
+    dataFrame.cache()
 
     // Find more active tweeters
     measureTime {
       val limit = 20
       printlnTitle(s"Top $limit active tweeters")
-      ActiveTweeters.find(limit, sqlContext, tweetsTable).collect.foreach(println)
+      ActiveTweeters.find(limit, sqlContext, tweetsTable).show(limit, false)
     }
 
     // Find more tweeted words
     measureTime {
       val limit = 20
       printlnTitle(s"Top $limit tweeted words")
-      WordCount.count(dataFrame, false, limit).foreach(println)
+      WordCount.countDF(dataFrame, false).show(limit, false)
+    }
+
+    measureTime {
+      val authorLimit = 5
+      val wordLimit = 20
+      printlnTitle(s"Top $wordLimit words and top $authorLimit authors")
+      WordCount.countPerAuthor(dataFrame, false, authorLimit).take(wordLimit)
+        .foreach({ case ((word, count), list) =>
+          println(s"$word (tweeted $count times):")
+          list.foreach({ case (author, count) =>
+            println(s"- $author: $count")
+          })
+      })
     }
 
     // Find more tweeted words in time
@@ -62,9 +78,9 @@ object TwitterAnalyzer {
       val limit = 20
       val hours = 6
       printlnTitle(s"Top $limit tweeted words/" + hours + "h")
-      WordCount.countInTime(dataFrame, true, hours, limit).collect
-        .foreach({ case (key, list) =>
-          println(s"$key:")
+      WordCount.countInTime(dataFrame, false, hours, limit).collect
+        .foreach({ case ((timeSlice, count), list) =>
+          println(s"$timeSlice, $count tweets:")
           list.foreach(println)
       })
     }
