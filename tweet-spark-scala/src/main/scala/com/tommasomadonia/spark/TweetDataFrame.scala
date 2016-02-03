@@ -11,7 +11,9 @@ package object dataframe_extension {
 
   implicit class TweetDataFrame(dataFrame: DataFrame) {
 
-    def filterRetweets(filter: Boolean): DataFrame = if (filter) dataFrame.filter(col("retweeted_status").isNull) else dataFrame
+    def filterRetweets(filter: Boolean): DataFrame = if (filter && dataFrame.columns.contains("retweeted_status")) dataFrame.filter(col("retweeted_status").isNull) else dataFrame
+
+    def filterMalformed(): DataFrame = dataFrame.filter(col("text").isNotNull).filter(col("created_at").isNotNull)
 
     def coalesceRetweets(): DataFrame = {
       val extractIndicesFunction: (Seq[Row] => Seq[_Indices]) = (elements: Seq[Row]) => {
@@ -24,12 +26,21 @@ package object dataframe_extension {
 
       val extractIndices = udf(extractIndicesFunction)
 
-      dataFrame
-        .withColumn("tweet_text", when(col("retweeted_status").isNull, col("text")).otherwise(col("retweeted_status.text")))
-        .withColumn("hashtags", when(col("retweeted_status").isNull, col("entities.hashtags")).otherwise(col("retweeted_status.entities.hashtags")))
-        .withColumn("media", when(col("retweeted_status").isNull, extractIndices(col("entities.media"))).otherwise(extractIndices(col("retweeted_status.entities.media"))))
-        .withColumn("urls", when(col("retweeted_status").isNull, col("entities.urls")).otherwise(col("retweeted_status.entities.urls")))
-        .withColumn("user_mentions", when(col("retweeted_status").isNull, col("entities.user_mentions")).otherwise(col("retweeted_status.entities.user_mentions")))
+      if (!dataFrame.columns.contains("retweeted_status")) {
+        dataFrame
+          .withColumn("tweet_text", col("text"))
+          .withColumn("hashtags", col("entities.hashtags"))
+          .withColumn("media", extractIndices(col("entities.media")))
+          .withColumn("urls", col("entities.urls"))
+          .withColumn("user_mentions", col("entities.user_mentions"))
+      } else {
+        dataFrame
+          .withColumn("tweet_text", when(col("retweeted_status").isNull, col("text")).otherwise(col("retweeted_status.text")))
+          .withColumn("hashtags", when(col("retweeted_status").isNull, col("entities.hashtags")).otherwise(col("retweeted_status.entities.hashtags")))
+          .withColumn("media", when(col("retweeted_status").isNull, extractIndices(col("entities.media"))).otherwise(extractIndices(col("retweeted_status.entities.media"))))
+          .withColumn("urls", when(col("retweeted_status").isNull, col("entities.urls")).otherwise(col("retweeted_status.entities.urls")))
+          .withColumn("user_mentions", when(col("retweeted_status").isNull, col("entities.user_mentions")).otherwise(col("retweeted_status.entities.user_mentions")))
+      }
     }
 
     def tweetDataFrame(column: String): DataFrame = {

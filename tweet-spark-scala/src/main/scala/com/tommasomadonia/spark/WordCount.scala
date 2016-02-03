@@ -1,8 +1,7 @@
 package com.tommasomadonia.spark
 
-import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{DataFrame, Row, Column}
+import org.apache.spark.sql.{DataFrame, Row}
 import org.apache.spark.sql.functions._
 
 import scala.collection.mutable.{ArrayBuffer, StringBuilder}
@@ -32,6 +31,7 @@ object WordCount {
       val timeSlice = udf(timeSliceFunction)
 
       val timeSlicedDataFrame = dataFrame
+        .filterMalformed()
         .filterRetweets(ignoreRetweets)
         .withColumn("time_slice", timeSlice(col("created_at")))
 
@@ -67,6 +67,7 @@ object WordCount {
     case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.emptyDataFrame
     case dataFrame => {
       dataFrame
+        .filterMalformed()
         .filterRetweets(ignoreRetweets)
         .tweetDataFrame("tweet")
         .explode(col("tweet")) { row =>
@@ -92,6 +93,7 @@ object WordCount {
     case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.sparkContext.emptyRDD[((String, Long), List[WordCountTuple])]
     case dataFrame => {
       dataFrame
+        .filterMalformed()
         .filterRetweets(ignoreRetweets)
         .tweetDataFrame("tweet")
         .explode(col("tweet")) { row =>
@@ -115,8 +117,9 @@ object WordCount {
 
 
   private[this] def tokenize(tweet: Tweet): TraversableOnce[String] = tweet match {
+    case Tweet(tweet, indices) if (tweet == null || tweet.isEmpty) => Array[String]()
     case Tweet(tweet, indices) => {
-      val sortedIndices = indices.sortWith(_._1 > _._1)
+      val sortedIndices = (if (indices != null) indices else Array[(Long, Long)]()).sortWith(_._1 > _._1)
       val text = new StringBuilder(tweet.replaceAll("[^\u0000-\uFFFF]", " ").replaceAll("\\n", " "))
       val token = ArrayBuffer.empty[String]
       for (index <- sortedIndices) {

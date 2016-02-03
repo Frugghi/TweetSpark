@@ -5,8 +5,6 @@ import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.{SparkContext, SparkConf}
 
-import com.tommasomadonia.spark.dataframe_extension._
-
 object TwitterAnalyzer {
 
   def main(args: Array[String]) {

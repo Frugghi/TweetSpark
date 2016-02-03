@@ -1,6 +1,6 @@
 package com.tommasomadonia.spark.test
 
-import org.apache.spark.sql.{DataFrameReader, SQLContext}
+import org.apache.spark.sql.DataFrameReader
 import org.apache.spark.sql.types.StructType
 import org.scalatest.Suite
 
