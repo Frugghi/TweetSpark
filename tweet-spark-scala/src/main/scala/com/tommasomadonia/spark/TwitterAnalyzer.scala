@@ -47,41 +47,48 @@ object TwitterAnalyzer {
     dataFrame.cache()
 
     // Find more active tweeters
-    measureTime {
+    {
       val limit = 20
       printlnTitle(s"Top $limit active tweeters")
-      ActiveTweeters.find(limit, sqlContext, tweetsTable).show(limit, false)
+      measureTime {
+        ActiveTweeters.find(limit, sqlContext, tweetsTable).show(limit, false)
+      }
     }
 
     // Find more tweeted words
-    measureTime {
+    {
       val limit = 20
       printlnTitle(s"Top $limit tweeted words")
-      WordCount.countDF(dataFrame, false).show(limit, false)
+      measureTime {
+        WordCount.countDF(dataFrame, false).show(limit, false)
+      }
     }
 
-    measureTime {
+    // Find more tweeted words and authors
+    {
       val authorLimit = 5
       val wordLimit = 20
       printlnTitle(s"Top $wordLimit words and top $authorLimit authors")
-      WordCount.countPerAuthor(dataFrame, false, authorLimit).take(wordLimit)
-        .foreach({ case ((word, count), list) =>
-          println(s"$word (tweeted $count times):")
-          list.foreach({ case (author, count) =>
-            println(s"- $author: $count")
-          })
+      measureTime {
+        WordCount.countPerAuthor(dataFrame, false, authorLimit).take(wordLimit)
+      }.foreach({ case ((word, count), list) =>
+        println(s"$word (tweeted $count times):")
+        list.foreach({ case (author, count) =>
+          println(s"- $author: $count")
+        })
       })
     }
 
     // Find more tweeted words in time
-    measureTime {
+    {
       val limit = 20
       val hours = 6
       printlnTitle(s"Top $limit tweeted words/" + hours + "h")
-      WordCount.countInTime(dataFrame, false, hours, limit).collect
-        .foreach({ case ((timeSlice, count), list) =>
-          println(s"$timeSlice, $count tweets:")
-          list.foreach(println)
+      measureTime {
+        WordCount.countInTime(dataFrame, false, hours, limit).collect
+      }.foreach({ case ((timeSlice, count), list) =>
+        println(s"$timeSlice, $count tweets:")
+        list.foreach(println)
       })
     }
 
