@@ -14,7 +14,7 @@ do
         application_id=`echo "$line" | egrep -o 'application_[0-9]+_[0-9]+'`
     fi
     echo "$line"
-done < <( $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster "$DIR/$1" "${@:2}" 2>&1 >/dev/null )
+done < <( $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster --num-executors 4 "$DIR/$1" "${@:2}" 2>&1 >/dev/null )
 
 echo "The applicationId is $application_id"
 
