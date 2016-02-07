@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
 #Common
-#VAGRANT_RES_DIR=/home/vagrant/resources
 VAGRANT_HDFS_DIR=$VAGRANT_RES_DIR/hdfs
 
 #Java
+JAVA_HOME=/usr/local/java
 function setupJavaVariables {
     if [ $(uname -m) == 'x86_64' ]; then
         JAVA_ARCH="x64"

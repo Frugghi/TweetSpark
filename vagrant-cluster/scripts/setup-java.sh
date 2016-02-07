@@ -18,16 +18,16 @@ function installLocalJava {
 function setupJava {
     echo "Setting up Java"
     if resourceExists $JAVA_ARCHIVE; then
-        ln -s /usr/local/jdk1.$JAVA_MAJOR_VERSION.0_$JAVA_BUILD_VERSION /usr/local/java
+        ln -s /usr/local/jdk1.$JAVA_MAJOR_VERSION.0_$JAVA_BUILD_VERSION "$JAVA_HOME"
     else
-        ln -s /usr/lib/jvm/jre /usr/local/java
+        ln -s /usr/lib/jvm/jre "$JAVA_HOME"
     fi
 }
 
 function setupEnvVars {
     echo "Creating Java environment variables"
-    echo export JAVA_HOME=/usr/local/java >> /etc/profile.d/java.sh
-    echo export PATH=\${JAVA_HOME}/bin:\${PATH} >> /etc/profile.d/java.sh
+    echo "export JAVA_HOME=$JAVA_HOME" >> /etc/profile.d/java.sh
+    echo "export PATH=\${JAVA_HOME}/bin:\${PATH}" >> /etc/profile.d/java.sh
 }
 
 function installJava {
