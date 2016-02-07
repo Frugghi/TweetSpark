@@ -8,6 +8,7 @@ object ActiveTweeters {
     sqlContext.sql(s"""
                       |SELECT user.screen_name, COUNT(*) AS total_count
                       |FROM $table
+                      |WHERE user.screen_name IS NOT NULL
                       |GROUP BY user.screen_name
                       |ORDER BY total_count DESC
                       |LIMIT $limit""".stripMargin)
