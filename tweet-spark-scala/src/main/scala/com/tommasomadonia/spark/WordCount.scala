@@ -115,7 +115,6 @@ object WordCount {
     countPerAuthor(dataFrame, ignoreRetweets).map({ case (key, authorCount) => key -> authorCount.take(limitAuthor) })
   }
 
-
   private[this] def tokenize(tweet: Tweet): TraversableOnce[String] = tweet match {
     case Tweet(tweet, indices) if (tweet == null || tweet.isEmpty) => Array[String]()
     case Tweet(tweet, indices) => {
@@ -149,7 +148,8 @@ object WordCount {
         token += word
         text.delete(startIndex, endIndex)
       }
-      token ++= text.toString.trim.split("\\W+")
+
+      token ++= "(\\w[\\w']*\\w|\\w)".r.findAllIn(text.toString).toArray[String]
       token.filter(_.nonEmpty).filterNot(Set("\u2026").contains(_))
     }
   }
