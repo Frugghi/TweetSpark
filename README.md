@@ -27,7 +27,7 @@ The script uses [application-only authentication](https://dev.twitter.com/oauth/
 ### Vagrant cluster
 - Download and install [VirtualBox](https://www.virtualbox.org/wiki/Downloads)
 - Download and install [Vagrant](https://www.vagrantup.com/downloads.html)
-- Add CentOS 7 box: `vagrant box add centos7 http://cloud.centos.org/centos/7/vagrant/x86_64/images/CentOS-7-Vagrant-1509-x86_64-01.box`
+- Add CentOS 7 box: `vagrant box add centos7 http://cloud.centos.org/centos/7/vagrant/x86_64/images/CentOS-7-x86_64-Vagrant-1601_01.VirtualBox.box`
 - Download [Java](http://www.oracle.com/technetwork/java/javase/downloads/index.html)
 - Download [Hadoop](http://hadoop.apache.org/releases.html)
 - Download [Spark](http://spark.apache.org/downloads.html)
@@ -40,13 +40,14 @@ The script uses [application-only authentication](https://dev.twitter.com/oauth/
 #### Environment
 Currently the script set up a cluster of 1 master node and 3 slave nodes with 64bit CentOS 7, Java 7u79, Hadoop 2.7.1 and Spark 1.6.0 (without Hadoop).
 
-You can configure the cluster in `Vagrantfile`.
+You can configure the cluster in `settings.yml`.
 
 #### Web UI
 You can check the following URLs to monitor the Hadoop daemons:
 - [NameNode](http://10.211.55.100:50070/dfshealth.html)
 - [ResourceManager](http://10.211.55.100:8088/cluster)
 - [JobHistory](http://10.211.55.100:19888/jobhistory)
+- [Ambari](http://10.211.55.99:8080/)
 
 ## Thanks to
 - [Resty](http://github.com/micha/resty)

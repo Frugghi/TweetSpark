@@ -62,3 +62,22 @@ function fileExists {
         return 1
     fi
 }
+
+function installLocalRepo {
+	yum -y install yum-plugin-priorities
+
+	repo=`echo "$1" | sed 's/^file:\/\///'`
+	path=`dirname "$repo"`
+	cd "$path"
+	tar -xzvf "$repo" > /dev/null
+	repo_name=`basename "$repo" .tar.gz`
+	repo_path=`dirname $(find "$path/$reponame" -name 'repodata')`
+	echo -e "[local]\nname=$repo_name\nbaseurl=file://$repo_path\nenabled=1\ngpgcheck=0\nprotect=1" > "/etc/yum.repos.d/$repo_name.repo"
+}
+
+function installRemoteRepo {
+	yum -y install wget
+
+	cd /etc/yum.repos.d/
+	wget "$1"
+}

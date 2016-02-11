@@ -22,3 +22,9 @@ master:
 slaves:
   count: 3
   memory: 2048
+  
+ambari:
+  enabled: true
+  repo: http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.2.0.0/ambari.repo
+  memory: 2048
+  address: 10.211.55.99

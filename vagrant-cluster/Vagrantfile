@@ -10,19 +10,23 @@ settings = YAML.load_file 'settings.yml'
 numSlaves = settings['slaves']['count']
 masterMemory = settings['master']['memory']
 slaveMemory = settings['slaves']['memory']
+monitorMemory = settings['ambari']['memory']
+monitorAddress = settings['ambari']['address']
+ambari = settings['ambari']['enabled']
 baseAddress = settings['box']['base_address']
 
 boxName = settings['box']['os']
 javaVersion = "#{settings['java']['version']}u#{settings['java']['update']}"
 hadoopVersion = settings['hadoop']['version']
 sparkVersion = settings['spark']['version']
+ambariRepo = settings['ambari']['repo']
 
 resources_dir="/home/vagrant/resources"
 gui = settings['box']['gui']
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     addresses = (0..numSlaves).to_a.map do |i|
-        if i < 10
+		if i < 10
             "#{baseAddress}.10#{i}"
         elsif i < 100
             "#{baseAddress}.1#{i}"
@@ -30,9 +34,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             "#{baseAddress}.#{i}"
         end
     end
+	addresses.unshift(monitorAddress)
     
-    addresses[1, numSlaves].each do |ip|
-        i = addresses.index(ip)
+    addresses.last(numSlaves).each_with_index  do |ip, index|
+        i = index + 1
         nodename = "slave#{i}"
         
         config.vm.define "#{nodename}" do |slave|
@@ -47,16 +52,21 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
               virtualbox.customize ["modifyvm", :id, "--memory", "#{slaveMemory}"]
             end
             slave.vm.network :private_network, ip: "#{ip}"
-            slave.vm.hostname = "#{nodename}"
+            slave.vm.hostname = "#{nodename}.cluster"
 			slave.vm.provision "shell", inline: "source ~/.bashrc && [ -z \"$VAGRANT_RES_DIR\" ] && echo \"export VAGRANT_RES_DIR=#{resources_dir}\" >> ~/.bashrc"
             slave.vm.provision "shell", path: "scripts/setup-centos.sh"
             slave.vm.provision "shell", path: "scripts/setup-centos-hosts.sh", args: addresses
             slave.vm.provision "shell", path: "scripts/setup-centos-ssh.sh", args: "-a"
             slave.vm.provision "shell", path: "scripts/setup-java.sh", args: "-j #{javaVersion}"
-            slave.vm.provision "shell", path: "scripts/setup-hadoop.sh", args: "-h #{hadoopVersion}"
-            slave.vm.provision "shell", path: "scripts/setup-hadoop-slaves.sh", args: "-t #{numSlaves}"
-            slave.vm.provision "shell", path: "scripts/setup-spark.sh", args: "-s #{sparkVersion}"
-            slave.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
+			if ambari
+				slave.vm.provision "shell", path: "scripts/setup-ntp.sh"
+				slave.vm.provision "shell", path: "scripts/setup-ambari-agent.sh", args: "#{ambariRepo}"
+			else
+				slave.vm.provision "shell", path: "scripts/setup-hadoop.sh", args: "-h #{hadoopVersion}"
+				slave.vm.provision "shell", path: "scripts/setup-hadoop-slaves.sh", args: "-t #{numSlaves}"
+				slave.vm.provision "shell", path: "scripts/setup-spark.sh", args: "-s #{sparkVersion}"
+				slave.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
+			end
         end
     end
     
@@ -68,27 +78,59 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 		master.vm.provision "file", source: "master/hdfs/", destination: "#{resources_dir}"
 		master.vm.provision "file", source: "master/deploy/", destination: "#{resources_dir}"
         master.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
+		master.vm.provision "file", source: "scripts/initialize-hdfs.sh", destination: "#{resources_dir}/initialize-hdfs.sh"
         master.vm.provider "virtualbox" do |virtualbox|
 			virtualbox.gui = gui
             virtualbox.name = "master"
             virtualbox.customize ["modifyvm", :id, "--memory", "#{masterMemory}"]
         end
-        master.vm.network :private_network, ip: addresses[0]
-        master.vm.hostname = "master"
+        master.vm.network :private_network, ip: addresses[1]
+        master.vm.hostname = "master.cluster"
 		master.vm.provision "shell", inline: "source ~/.bashrc && [ -z \"$VAGRANT_RES_DIR\" ] && echo \"export VAGRANT_RES_DIR=#{resources_dir}\" >> ~/.bashrc"
         master.vm.provision "shell", path: "scripts/setup-centos.sh"
         master.vm.provision "shell", path: "scripts/setup-centos-hosts.sh", args: addresses
         master.vm.provision "shell", path: "scripts/setup-centos-ssh.sh", args: "-a -i"
         master.vm.provision "shell", path: "scripts/setup-java.sh", args: "-j #{javaVersion}"
-        master.vm.provision "shell", path: "scripts/setup-hadoop.sh", args: "-h #{hadoopVersion}"
-        master.vm.provision "shell", path: "scripts/setup-hadoop-slaves.sh", args: "-t #{numSlaves}"
-        master.vm.provision "shell", path: "scripts/setup-spark.sh", args: "-s #{sparkVersion}"
-        master.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
-		master.vm.provision "shell", inline: "hdfs namenode -format"
-        master.vm.provision "shell", path: "scripts/start-services.sh", args: "--hadoop", run: "always"
-        master.vm.provision "shell", path: "scripts/initialize-hdfs.sh"
+		if ambari
+			master.vm.provision "shell", path: "scripts/setup-ntp.sh"
+			master.vm.provision "shell", path: "scripts/setup-ambari-agent.sh", args: "#{ambariRepo}"
+		else
+			master.vm.provision "shell", path: "scripts/setup-hadoop.sh", args: "-h #{hadoopVersion}"
+			master.vm.provision "shell", path: "scripts/setup-hadoop-slaves.sh", args: "-t #{numSlaves}"
+			master.vm.provision "shell", path: "scripts/setup-spark.sh", args: "-s #{sparkVersion}"
+			master.vm.provision "shell", path: "scripts/setup-spark-slaves.sh", args: "-t #{numSlaves}"
+			master.vm.provision "shell", inline: "hdfs namenode -format"
+			master.vm.provision "shell", path: "scripts/start-services.sh", args: "--hadoop", run: "always"
+			master.vm.provision "shell", path: "scripts/initialize-hdfs.sh"
+		end
 		master.vm.provision "shell", path: "master/setup-env.sh"
 		master.vm.provision "shell", inline: "chmod +x #{resources_dir}/deploy/spark-submit-yarn"
 		master.vm.provision "shell", inline: "chmod +x #{resources_dir}/deploy/auto-deploy"
+		master.vm.provision "shell", inline: "chmod +x #{resources_dir}/initialize-hdfs.sh"
     end
+	
+	if ambari
+		config.vm.define "monitor" do |monitor|
+			monitor.vm.box = "#{boxName}"
+			monitor.vm.synced_folder ".", "/home/vagrant/sync", disabled: true
+			monitor.vm.synced_folder ".", "/vagrant", disabled: true
+			monitor.vm.provision "file", source: "resources/", destination: "#{resources_dir}"
+			monitor.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
+			monitor.vm.provider "virtualbox" do |virtualbox|
+				virtualbox.gui = gui
+				virtualbox.name = "monitor"
+				virtualbox.customize ["modifyvm", :id, "--memory", "#{monitorMemory}"]
+			end
+			monitor.vm.network :private_network, ip: addresses[0]
+			monitor.vm.hostname = "monitor.cluster"
+			monitor.vm.provision "shell", inline: "source ~/.bashrc && [ -z \"$VAGRANT_RES_DIR\" ] && echo \"export VAGRANT_RES_DIR=#{resources_dir}\" >> ~/.bashrc"
+			monitor.vm.provision "shell", path: "scripts/setup-centos.sh"
+			monitor.vm.provision "shell", path: "scripts/setup-centos-hosts.sh", args: addresses
+			monitor.vm.provision "shell", path: "scripts/setup-centos-ssh.sh", args: "-a -i"
+			monitor.vm.provision "shell", path: "scripts/setup-java.sh", args: "-j #{javaVersion}"
+			monitor.vm.provision "shell", path: "scripts/setup-ntp.sh"
+			monitor.vm.provision "shell", path: "scripts/setup-ambari-server.sh", args: "#{ambariRepo}"
+			#monitor.vm.provision "shell", path: "scripts/ambari-spark-cluster.sh"
+		end
+	end
 end
