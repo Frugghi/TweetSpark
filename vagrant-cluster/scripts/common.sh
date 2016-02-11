@@ -40,6 +40,12 @@ function setupSparkVariables {
     SPARK_MIRROR_DOWNLOAD=../resources/$SPARK_ARCHIVE
 }
 
+#InfluxDB
+function setupInfluxDBVariables {
+    INFLUXDB_VERSION="$1"
+    INFLUXDB_RPM=influxdb-$INFLUXDB_VERSION.x86_64.rpm
+}
+
 #SSH
 SSH_RES_DIR=$VAGRANT_RES_DIR/ssh
 RES_SSH_CONFIG=$SSH_RES_DIR/config
