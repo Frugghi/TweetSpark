@@ -19,6 +19,7 @@ function setupSpark {
     echo "Copying over Spark configuration files"
     cp -f $VAGRANT_RES_DIR/spark/slaves $SPARK_CONF/slaves
     cp -f $VAGRANT_RES_DIR/spark/spark-env.sh $SPARK_CONF/spark-env.sh
+	cp -f $VAGRANT_RES_DIR/spark/spark-defaults.conf $SPARK_CONF/spark-defaults.conf
 }
 
 function setupEnvVars {

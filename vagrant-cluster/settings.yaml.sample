@@ -10,11 +10,20 @@ hadoop:
   
 spark:
   version: 1.6.0
+
+influxdb:
+  version: 0.10.0-1  
+
+ambari:
+  enabled: false
+  repo: http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.2.0.0/ambari.repo
   
 box:
   os: centos7
   gui: false
-  base_address: 10.211.55
+  cpus: 2
+  network: public_network
+  base_address: 192.168.1.10
   
 master:
   memory: 2048
@@ -23,8 +32,7 @@ slaves:
   count: 3
   memory: 2048
   
-ambari:
-  enabled: true
-  repo: http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.2.0.0/ambari.repo
+monitor:
+  enabled: false
   memory: 2048
-  address: 10.211.55.99
+  address: 192.168.1.105
