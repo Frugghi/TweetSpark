@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
  * @author Tommaso Madonia
  */
 public class CPULoadProfiler extends Profiler {
-    public static final long PERIOD = 10;
+    public static final long PERIOD = 1;
 
     private OperatingSystemMXBean operatingSystemMXBean;
     private RuntimeMXBean runtimeMXBean;

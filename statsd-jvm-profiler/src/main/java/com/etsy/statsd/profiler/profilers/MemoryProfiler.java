@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Andrew Johnson
  */
 public class MemoryProfiler extends Profiler {
-    public static final long PERIOD = 10;
+    public static final long PERIOD = 1;
 
     private MemoryMXBean memoryMXBean;
     private List<GarbageCollectorMXBean> gcMXBeans;
