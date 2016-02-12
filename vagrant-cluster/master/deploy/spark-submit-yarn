@@ -9,31 +9,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 NUM_EXECUTORS=`grep -c -E '(master|slave[0-9]*)\.cluster$' /etc/hosts`
 CORES=2
 
-function updateClusterProfiler {
-	if [ -d "$VAGRANT_RES_DIR/profiler" ]; then
-		echo "Updating profiler settings..."
-		local profiler="$VAGRANT_RES_DIR/profiler/update-profiler.sh"
-		local profiler_jar=""
-		if [ -e "$VAGRANT_RES_DIR/profiler/profiler" ]; then
-			profiler_jar=`cat "$VAGRANT_RES_DIR/profiler/profiler"`
-		else
-			profiler_jar=`basename $(find "$VAGRANT_RES_DIR/profiler" -name 'statsd-jvm-profiler*.jar')`
-		fi
-		local profiler_options="${1//PROFILER_JAR/$profiler_jar}"
-		$profiler "$profiler_options"
-		while IFS= read -r host
-		do
-			ssh -n $host "$profiler $profiler_options"
-		done < <( grep -o -e 'slave[0-9]*\.cluster$' /etc/hosts )
-		${HADOOP_PREFIX}/sbin/stop-yarn.sh
-		${HADOOP_PREFIX}/sbin/start-yarn.sh
-	elif [ ! -z "$1" ]; then
-		echo "Profiler not found"
-	fi
-}
-
-updateClusterProfiler "-javaagent:/home/vagrant/resources/profiler/PROFILER_JAR=server=monitor.cluster,port=8086,reporter=InfluxDBReporter,database=profiler,username=profiler,password=profiler,packageWhitelist=com.tommasomadonia,prefix=bigdata.profiler.$(basename $1 .jar).USERNAME_HERE.${2//\//}.$RANDOM.$(date +'%y%m%d-%H%M'),tagMapping=SKIP.SKIP.username.job.flow.stage.phase"
-
 application_id=""
 while read line
 do
@@ -42,8 +17,6 @@ do
     fi
     echo "$line"
 done < <( $SPARK_HOME/bin/spark-submit --master yarn --deploy-mode cluster --num-executors $NUM_EXECUTORS --executor-cores $CORES "$DIR/$1" "${@:2}" 2>&1 >/dev/null )
-
-updateClusterProfiler ""
 
 echo "The applicationId is $application_id"
 
