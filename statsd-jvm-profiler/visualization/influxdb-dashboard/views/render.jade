@@ -1,0 +1,66 @@
+extends layout-render
+
+block content
+	div.container
+		text.hidden#refresh #{refresh}
+		text.hidden#prefix #{prefix}
+		div.panel.panel-default
+			div.panel-heading(style='text-align:center')
+				h2 Memory
+			div.panel-body#memory
+				div(style='text-align:center')
+					h3 Heap Usage
+					div#heap
+				div(style='text-align:center')
+					h3 Non-Heap Usage
+					div#nonheap
+		div.panel.panel-default
+			div.panel-heading(style='text-align:center')
+				h2 Garbage Collection
+			div.panel-body#gc
+				div(style='text-align:center')
+					h3 GC Count
+					div#count
+				div(style='text-align:center')
+					h3 Total GC Time (ms)
+					div#time
+				div(style='text-align:center')
+					h3 GC Time (ms)
+					div#runtime
+		div.panel.panel-default
+			div.panel-heading(style='text-align:center')
+				h2 Classes
+			div.panel-body#loading
+				div(style='text-align:center')
+					h3 Class Loading
+					div#classloading
+		div.panel.panel-default
+			div.panel-heading(style='text-align:center')
+				h2 Memory Pools
+			div.panel-body#pool
+				div(style='text-align:center')
+					h3 Eden
+					div#eden
+				div(style='text-align:center')
+					h3 Old Generation
+					div#oldgen
+				div(style='text-align:center')
+					h3 Survivor Space
+					div#survivor
+				div(style='text-align:center')
+					h3 Code Cache
+					div#codecache
+				div(style='text-align:center')
+					h3 Permgen
+					div#permgen
+		div.panel.panel-default
+			div.panel-heading(style='text-align:center')
+				h2 Finalization
+			div.panel-body#finalization
+				div(style='text-align:center')
+					h3 Objects Pending Finalization
+					div#finalize
+		
+	div.panel.panel-default#toc
+
+		script(src='/scripts/render-client.js')
