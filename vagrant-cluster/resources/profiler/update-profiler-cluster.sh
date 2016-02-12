@@ -9,18 +9,21 @@ USERNAME="profiler"
 PASSWORD="profiler"
 WHITELIST=""
 BLACKLIST=""
+PROFILERS=""
 
-while getopts s:r:d:u:p:w:b: option
+while getopts s:t:r:d:u:p:w:b:f: option
 do
     case "${option}"
     in
         s) SERVER=${OPTARG};;
+        t) PORT=${OPTARG};;
         r) REPORTER=${OPTARG};;
         d) DATABASE=${OPTARG};;
         u) USERNAME=${OPTARG};;
         p) PASSWORD=${OPTARG};;
         w) WHITELIST=${OPTARG};;
         b) BLACKLIST=${OPTARG};;
+        f) PROFILERS=${OPTARG};;
     esac
 done
 
@@ -39,6 +42,9 @@ if [ ! -z "$WHITELIST" ]; then
 fi
 if [ ! -z "$BLACKLIST" ]; then
     profiler_options="${profiler_options},packageBlacklist=${BLACKLIST}"
+fi
+if [ ! -z "$PROFILERS" ]; then
+    profiler_options="${profiler_options},profilers=${PROFILERS}"
 fi
 
 $profiler "$profiler_options"
