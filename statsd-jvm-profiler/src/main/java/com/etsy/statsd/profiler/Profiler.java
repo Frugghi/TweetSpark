@@ -77,6 +77,17 @@ public abstract class Profiler {
     }
 
     /**
+     * Record a gauge value
+     *
+     * @param key The key for the gauge
+     * @param value The value of the gauge
+     */
+    protected void recordGaugeValue(String key, double value) {
+        recordedStats++;
+        reporter.recordGaugeValue(key, value);
+    }
+
+    /**
      * Record multiple gauge values
      * This is useful for reporters that can send points in batch
      *

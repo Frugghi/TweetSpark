@@ -60,16 +60,16 @@ public class CPULoadProfiler extends Profiler {
      * Records all CPU load statistics
      */
     private void recordStats() {
-        recordGaugeValue("system.cpu.load", (long) (operatingSystemMXBean.getSystemLoadAverage() * 100));
+        recordGaugeValue("system.cpu.load", operatingSystemMXBean.getSystemLoadAverage());
         if (operatingSystemMXBean instanceof com.sun.management.OperatingSystemMXBean) {
             com.sun.management.OperatingSystemMXBean sunOperatingSystemMXBean = (com.sun.management.OperatingSystemMXBean) this.operatingSystemMXBean;
-            recordGaugeValue("jvm.cpu.load", (long) (sunOperatingSystemMXBean.getProcessCpuLoad() * 100));
+            recordGaugeValue("jvm.cpu.load", sunOperatingSystemMXBean.getProcessCpuLoad());
             int availableProcessors = sunOperatingSystemMXBean.getAvailableProcessors();
             long uptime = runtimeMXBean.getUptime();
             long cpuTime = sunOperatingSystemMXBean.getProcessCpuTime();
             if (oldUptime > 0 && oldCpuTime > 0) {
                 double cpuUsage = Math.min(99F, (cpuTime - oldCpuTime) / ((uptime - oldUptime) * 10000F * availableProcessors));
-                recordGaugeValue("jvm.cpu.usage", (long) (cpuUsage * 100));
+                recordGaugeValue("jvm.cpu.usage", cpuUsage);
             }
             oldUptime = uptime;
             oldCpuTime = cpuTime;

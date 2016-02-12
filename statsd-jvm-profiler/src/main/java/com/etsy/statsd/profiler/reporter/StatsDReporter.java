@@ -28,6 +28,17 @@ public class StatsDReporter extends Reporter<StatsDClient> {
     }
 
     /**
+     * Record a gauge value in StatsD
+     *
+     * @param key The key for the gauge
+     * @param value The value of the gauge
+     */
+    @Override
+    public void recordGaugeValue(String key, double value) {
+        client.recordGaugeValue(key, value);
+    }
+
+    /**
      * Record multiple gauge values in StatsD
      * This simply loops over calling recordGaugeValue
      *

@@ -51,19 +51,25 @@ public class InfluxDBReporter extends Reporter<InfluxDB> {
     }
 
     /**
+     * Record a gauge value in InfluxDB
+     *
+     * @param key The key for the gauge
+     * @param value The value of the gauge
+     */
+    @Override
+    public void recordGaugeValue(String key, double value) {
+        Map<String, Double> gauges = ImmutableMap.of(key, value);
+        recordGaugeGenericValues(gauges);
+    }
+
+    /**
      * Record multiple gauge values in InfluxDB
      *
      * @param gauges A map of gauge names to values
      */
     @Override
     public void recordGaugeValues(Map<String, Long> gauges) {
-        long time = System.currentTimeMillis();
-        BatchPoints batchPoints = BatchPoints.database(database)
-                .build();
-        for (Map.Entry<String, Long> gauge: gauges.entrySet()) {
-            batchPoints.point(constructPoint(time, gauge.getKey(), gauge.getValue()));
-        }
-        client.write(batchPoints);
+        recordGaugeGenericValues(gauges);
     }
 
     /**
@@ -106,7 +112,17 @@ public class InfluxDBReporter extends Reporter<InfluxDB> {
         Preconditions.checkNotNull(database);
     }
 
-    private Point constructPoint(long time, String key, long value) {
+    private <T extends Object> void recordGaugeGenericValues(Map<String, T> gauges) {
+        long time = System.currentTimeMillis();
+        BatchPoints batchPoints = BatchPoints.database(database)
+                .build();
+        for (Map.Entry<String, T> gauge: gauges.entrySet()) {
+            batchPoints.point(constructPoint(time, gauge.getKey(), gauge.getValue()));
+        }
+        client.write(batchPoints);
+    }
+
+    private Point constructPoint(long time, String key, Object value) {
         Point.Builder builder = Point.measurement(key)
                 .time(time, TimeUnit.MILLISECONDS)
                 .field(VALUE_COLUMN, value);

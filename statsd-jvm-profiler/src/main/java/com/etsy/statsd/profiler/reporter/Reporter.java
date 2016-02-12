@@ -33,6 +33,14 @@ public abstract class Reporter<T> {
     public abstract void recordGaugeValue(String key, long value);
 
     /**
+     * Record a gauge value
+     *
+     * @param key The name of the gauge
+     * @param value The value of the gauge
+     */
+    public abstract void recordGaugeValue(String key, double value);
+
+    /**
      * Record multiple gauge values
      * This is useful for reporters that can send points in batch
      *
