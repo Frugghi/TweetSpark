@@ -1,3 +1,11 @@
+import org.yaml.snakeyaml.Yaml
+
+buildscript {
+    dependencies {
+        classpath group: 'org.yaml', name: 'snakeyaml', version: '1.14'
+    }
+}
+
 plugins {
     id 'scala'
     id 'org.hidetake.ssh' version '1.1.4'
@@ -10,12 +18,15 @@ version '1.0-SNAPSHOT'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
+def vagrantClusterDir = "${rootDir}/../vagrant-cluster"
+def configuration = (Map) new Yaml().load(new File("${vagrantClusterDir}/settings.yml").text)
+
 remotes {
     master {
-        host = '10.211.55.100'
+        host = configuration['box']['base_address']
         user = 'root'
         knownHosts = allowAnyHosts
-        identity = file("${rootDir}/../vagrant-cluster/resources/ssh/vagrant")
+        identity = file("${vagrantClusterDir}/resources/ssh/vagrant")
     }
 }
 
@@ -64,11 +75,11 @@ test {
 task deploy(dependsOn : 'jar') << {
     ssh.run {
         session(remotes.master) {
-            put from: "${buildDir}/libs/${jar.archiveName}", into: '/home/vagrant/resources/deploy'
+            put from: "${buildDir}/libs/${jar.archiveName}", into: "${configuration['box']['resources_dir']}/deploy"
         }
     }
     copy {
         from "${buildDir}/libs/${jar.archiveName}"
-        into "${rootDir}/../vagrant-cluster/master/deploy"
+        into "${vagrantClusterDir}/master/deploy"
     }
 }

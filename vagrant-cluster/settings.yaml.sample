@@ -24,6 +24,7 @@ box:
   cpus: 2
   network: public_network
   base_address: 10.211.55.100
+  resources_dir: /home/vagrant/resources
   
 master:
   memory: 2048
