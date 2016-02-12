@@ -23,7 +23,7 @@ box:
   gui: false
   cpus: 2
   network: public_network
-  base_address: 192.168.1.10
+  base_address: 10.211.55.100
   
 master:
   memory: 2048
@@ -35,4 +35,4 @@ slaves:
 monitor:
   enabled: false
   memory: 2048
-  address: 192.168.1.105
+  address: 10.211.55.99
