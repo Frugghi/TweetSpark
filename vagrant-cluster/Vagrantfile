@@ -25,11 +25,13 @@ hadoopVersion = settings['hadoop']['version']
 sparkVersion = settings['spark']['version']
 influxdbVersion = settings['influxdb']['version']
 ambariRepo = settings['ambari']['repo']
+ambariAutosetup = settings['ambari']['autosetup']
 
 resources_dir=settings['box']['resources_dir']
 gui = settings['box']['gui']
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+    totalHosts = numSlaves + 1
     addresses = [monitorAddress, baseAddress]
     numSlaves.times do 
         addresses << IPAddr.new(addresses.last).succ.to_s
@@ -157,7 +159,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             monitor.vm.provision "shell", path: "scripts/setup-java.sh", args: "-j #{javaVersion}"
             monitor.vm.provision "shell", path: "scripts/setup-ntp.sh"
             monitor.vm.provision "shell", path: "scripts/setup-ambari-server.sh", args: "#{ambariRepo}"
-            monitor.vm.provision "shell", path: "scripts/ambari-spark-cluster.sh"
+			if ambariAutosetup
+                monitor.vm.provision "shell", path: "scripts/ambari-spark-cluster.sh", args: "-h #{totalHosts}"
+			end
         end
     end
 end

@@ -1,23 +1,39 @@
 
 # Vagrant file settings
 
+# Java version
 java:
   version: 7
   update: 79
-  
+
+# Hadoop version
 hadoop:
   version: 2.7.1
-  
+
+# Spark version
 spark:
   version: 1.6.0
 
+# InfluxDB version
 influxdb:
-  version: 0.10.0-1  
+  version: 0.10.0-1
 
+# Ambari
+# - enabled: Create the node with Ambari
+# - autosetup: Automatically create the cluster from the blueprint
+# - repo: Ambari repository
 ambari:
   enabled: false
+  autosetup: false
   repo: http://public-repo-1.hortonworks.com/ambari/centos7/2.x/updates/2.2.0.0/ambari.repo
-  
+
+# Box
+# - os: Box name
+# - gui: Show the VM GUI
+# - cpus: Number of cores per vm
+# - network: Public or private network
+# - base_address: This is the address of master node, slaves addresses start from this address + 1
+# - resources_dir: Resources directory on the VM
 box:
   os: centos7
   gui: false
@@ -25,14 +41,17 @@ box:
   network: public_network
   base_address: 10.211.55.100
   resources_dir: /home/vagrant/resources
-  
+
+# Master node
 master:
   memory: 2048
-  
+
+# Slave nodes
 slaves:
   count: 3
   memory: 2048
-  
+
+# Monitor node (Ambari node if ambari.enabled = true)
 monitor:
   enabled: false
   memory: 2048

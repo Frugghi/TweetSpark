@@ -1,11 +1,18 @@
 #!/usr/bin/env bash
 
+while getopts h: option
+do
+    case "${option}"
+    in
+        h) total_hosts=${OPTARG};;
+    esac
+done
+
 function getHosts {
    java -jar ./ambari/ambari-shell.jar --ambari.host=localhost <<< "host list" | grep -c ".*\.cluster"
 }
 
 cd "$VAGRANT_RES_DIR"
-total_hosts=4
 n_hosts=`getHosts`
 while [ $n_hosts -lt $total_hosts ]
 do
