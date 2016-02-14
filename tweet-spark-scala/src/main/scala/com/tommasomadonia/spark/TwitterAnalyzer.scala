@@ -58,7 +58,16 @@ object TwitterAnalyzer {
       val limit = 20
       printlnTitle(s"Top $limit tweeted words")
       measureTime {
-        WordCount.countDF(dataFrame, false).show(limit, false)
+        Words.countDF(dataFrame, false).show(limit, false)
+      }
+    }
+
+    // Find more tweeted hashtags
+    {
+      val limit = 20
+      printlnTitle(s"Top $limit tweeted hashtags")
+      measureTime {
+        Words.countHashtagsDF(dataFrame, false).show(limit, false)
       }
     }
 
@@ -68,7 +77,7 @@ object TwitterAnalyzer {
       val wordLimit = 20
       printlnTitle(s"Top $wordLimit words and top $authorLimit authors")
       measureTime {
-        WordCount.countPerAuthor(dataFrame, false, authorLimit).take(wordLimit)
+        Words.countPerAuthor(dataFrame, false, authorLimit).take(wordLimit)
       }.foreach({ case ((word, count), list) =>
         println(s"$word (tweeted $count times):")
         list.foreach({ case (author, count) =>
@@ -83,7 +92,7 @@ object TwitterAnalyzer {
       val hours = 6
       printlnTitle(s"Top $limit tweeted words/" + hours + "h")
       measureTime {
-        WordCount.countInTime(dataFrame, false, hours, limit).collect
+        Words.countInTime(dataFrame, false, hours, limit).collect
       }.foreach({ case ((timeSlice, count), list) =>
         println(s"$timeSlice, $count tweets:")
         list.foreach(println)

@@ -7,7 +7,7 @@ fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 NUM_EXECUTORS=`grep -c -E '(master|slave[0-9]*)\.cluster$' /etc/hosts`
-CORES=2
+CORES=1
 
 application_id=""
 while read line

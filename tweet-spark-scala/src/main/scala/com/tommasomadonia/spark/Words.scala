@@ -10,13 +10,13 @@ import com.github.nscala_time.time.Imports._
 
 import com.tommasomadonia.spark.dataframe_extension._
 
-case class Word(word: String)
+private case class Word(word: String)
 
-object WordCount {
-  type WordCountTuple = (String, Long)
+object Words {
+  type WordCount = (String, Long)
 
-  def countInTime(dataFrame: DataFrame, ignoreRetweets: Boolean, hours: Int): RDD[((String, Long), List[WordCountTuple])] = dataFrame match {
-    case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.sparkContext.emptyRDD[((String, Long), List[WordCountTuple])]
+  def countInTime(dataFrame: DataFrame, ignoreRetweets: Boolean, hours: Int): RDD[((String, Long), List[WordCount])] = dataFrame match {
+    case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.sparkContext.emptyRDD[((String, Long), List[WordCount])]
     case dataFrame => {
       def moduloFloor(number: Int, modulo: Int) = number - (number % modulo)
 
@@ -34,6 +34,7 @@ object WordCount {
         .filterMalformed()
         .filterRetweets(ignoreRetweets)
         .withColumn("time_slice", timeSlice(col("created_at")))
+        .cache()
 
       val countDataFrame: DataFrame = timeSlicedDataFrame
         .groupBy("time_slice")
@@ -44,8 +45,7 @@ object WordCount {
         .tweetDataFrame("tweet")
         .explode(col("tweet")) { row =>
           val indices = row.getStruct(0).getSeq[Row](1).map(index => (index.getLong(0), index.getLong(1)))
-          val tweet = Tweet(row.getStruct(0).getString(0), indices.toArray)
-          tokenize(tweet).map(Word(_))
+          Tweet(row.getStruct(0).getString(0), indices.toArray).tokenize().map(Word(_))
         }
         .groupBy("time_slice", "word")
         .count()
@@ -59,7 +59,7 @@ object WordCount {
     }
   }
 
-  def countInTime(dataFrame: DataFrame, ignoreRetweets: Boolean = false, hours: Int, limit: Int): RDD[((String, Long), List[WordCountTuple])] = {
+  def countInTime(dataFrame: DataFrame, ignoreRetweets: Boolean = false, hours: Int, limit: Int): RDD[((String, Long), List[WordCount])] = {
     countInTime(dataFrame, ignoreRetweets, hours).map({ case (key, wordCount) => key -> wordCount.take(limit) })
   }
 
@@ -72,8 +72,7 @@ object WordCount {
         .tweetDataFrame("tweet")
         .explode(col("tweet")) { row =>
           val indices = row.getStruct(0).getSeq[Row](1).map(index => (index.getLong(0), index.getLong(1)))
-          val tweet = Tweet(row.getStruct(0).getString(0), indices.toArray)
-          tokenize(tweet).map(Word(_))
+          Tweet(row.getStruct(0).getString(0), indices.toArray).tokenize().map(Word(_))
         }
         .groupBy("word")
         .count()
@@ -81,16 +80,16 @@ object WordCount {
     }
   }
 
-  def count(dataFrame: DataFrame, ignoreRetweets: Boolean): Seq[WordCountTuple] = {
+  def count(dataFrame: DataFrame, ignoreRetweets: Boolean): Seq[WordCount] = {
     countDF(dataFrame, ignoreRetweets).collect().map(row => (row.getAs("word"), row.getAs("count")))
   }
 
-  def count(dataFrame: DataFrame, ignoreRetweets: Boolean, limit: Int): Seq[WordCountTuple] = {
+  def count(dataFrame: DataFrame, ignoreRetweets: Boolean, limit: Int): Seq[WordCount] = {
     countDF(dataFrame, ignoreRetweets).take(limit).map(row => (row.getAs("word"), row.getAs("count")))
   }
 
-  def countPerAuthor(dataFrame: DataFrame, ignoreRetweets: Boolean): RDD[((String, Long), List[WordCountTuple])] = dataFrame match {
-    case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.sparkContext.emptyRDD[((String, Long), List[WordCountTuple])]
+  def countPerAuthor(dataFrame: DataFrame, ignoreRetweets: Boolean): RDD[((String, Long), List[WordCount])] = dataFrame match {
+    case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.sparkContext.emptyRDD[((String, Long), List[WordCount])]
     case dataFrame => {
       dataFrame
         .filterMalformed()
@@ -98,8 +97,7 @@ object WordCount {
         .tweetDataFrame("tweet")
         .explode(col("tweet")) { row =>
           val indices = row.getStruct(0).getSeq[Row](1).map(index => (index.getLong(0), index.getLong(1)))
-          val tweet = Tweet(row.getStruct(0).getString(0), indices.toArray)
-          tokenize(tweet).map(Word(_))
+          Tweet(row.getStruct(0).getString(0), indices.toArray).tokenize().map(Word(_))
         }
         .groupBy("word", "user.screen_name")
         .count()
@@ -111,47 +109,34 @@ object WordCount {
     }
   }
 
-  def countPerAuthor(dataFrame: DataFrame, ignoreRetweets: Boolean = false, limitAuthor: Int): RDD[((String, Long), List[WordCountTuple])] = {
+  def countPerAuthor(dataFrame: DataFrame, ignoreRetweets: Boolean = false, limitAuthor: Int): RDD[((String, Long), List[WordCount])] = {
     countPerAuthor(dataFrame, ignoreRetweets).map({ case (key, authorCount) => key -> authorCount.take(limitAuthor) })
   }
 
-  private[this] def tokenize(tweet: Tweet): TraversableOnce[String] = tweet match {
-    case Tweet(tweet, indices) if (tweet == null || tweet.isEmpty) => Array[String]()
-    case Tweet(tweet, indices) => {
-      val sortedIndices = (if (indices != null) indices else Array[(Long, Long)]()).sortWith(_._1 > _._1)
-      val text = new StringBuilder(tweet.replaceAll("[^\u0000-\uFFFF]", " ").replaceAll("\\n", " "))
-      val token = ArrayBuffer.empty[String]
-      for (index <- sortedIndices) {
-        // Apparently Twitter API are bugged (?) and sometimes oob indices are returned
-        var startIndex = index._1.toInt
-        var endIndex = index._2.toInt
-        if (endIndex > text.length) {
-          val delta = endIndex - text.length
-          startIndex -= delta
-          endIndex -= delta
+  def countHashtagsDF(dataFrame: DataFrame, ignoreRetweets: Boolean): DataFrame = dataFrame match {
+    case dataFrame if !dataFrame.columns.contains("user") => dataFrame.sqlContext.emptyDataFrame
+    case dataFrame => {
+      dataFrame
+        .filterMalformed()
+        .filterRetweets(ignoreRetweets)
+        .tweetDataFrame("tweet")
+        .explode(col("tweet")) { row =>
+          val indices = row.getStruct(0).getSeq[Row](1).map(index => (index.getLong(0), index.getLong(1)))
+          Tweet(row.getStruct(0).getString(0), indices.toArray).tokenize().map(Word(_))
         }
-        var word = text.substring(startIndex, endIndex)
-        if (word.trim != word) {
-          val headTrimmedWord = word.replaceFirst("^\\s+", "")
-          if (word.length != headTrimmedWord.length) {
-            val delta = word.length - headTrimmedWord.length
-            startIndex += delta
-            endIndex += delta
-          } else {
-            val tailTrimmedWord = word.replaceFirst("\\s+$", "")
-            val delta = word.length - tailTrimmedWord.length
-            startIndex -= delta
-            endIndex -= delta
-          }
-          word = text.substring(startIndex, endIndex).trim
-        }
-        token += word
-        text.delete(startIndex, endIndex)
-      }
-
-      token ++= "(\\w[\\w']*\\w|\\w)".r.findAllIn(text.toString).toArray[String]
-      token.filter(_.nonEmpty).filterNot(Set("\u2026").contains(_))
+        .filter(col("word").startsWith("#"))
+        .groupBy("word")
+        .count()
+        .orderBy(desc("count"))
     }
+  }
+
+  def countHashtags(dataFrame: DataFrame, ignoreRetweets: Boolean): Seq[WordCount] = {
+    countHashtagsDF(dataFrame, ignoreRetweets).collect().map(row => (row.getAs("word"), row.getAs("count")))
+  }
+
+  def countHashtags(dataFrame: DataFrame, ignoreRetweets: Boolean, limit: Int): Seq[WordCount] = {
+    countHashtagsDF(dataFrame, ignoreRetweets).take(limit).map(row => (row.getAs("word"), row.getAs("count")))
   }
 
 }
