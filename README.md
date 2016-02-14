@@ -59,6 +59,7 @@ You can check the following URLs to monitor the Hadoop daemons:
 ## Thanks to
 - [Resty](http://github.com/micha/resty)
 - [jq](https://stedolan.github.io/jq/)
+- [Bash OAuth](https://github.com/livibetter-backup/bash-oauth/)
 - [Vagrant Hadoop Spark Cluster](https://github.com/dnafrance/vagrant-hadoop-spark-cluster)
 - [Cluster profiling](http://ihorbobak.com/index.php/2015/08/05/cluster-profiling/)
 - [Statsd JVM profiler](https://github.com/etsy/statsd-jvm-profiler)
