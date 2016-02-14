@@ -36,10 +36,10 @@ package object dataframe_extension {
       } else {
         dataFrame
           .withColumn("tweet_text", when(col("retweeted_status").isNull, col("text")).otherwise(col("retweeted_status.text")))
-          .withColumn("hashtags", when(col("retweeted_status").isNull, col("entities.hashtags")).otherwise(col("retweeted_status.entities.hashtags")))
+          .withColumn("hashtags", when(col("retweeted_status").isNull, extractIndices(col("entities.hashtags"))).otherwise(extractIndices(col("retweeted_status.entities.hashtags"))))
           .withColumn("media", when(col("retweeted_status").isNull, extractIndices(col("entities.media"))).otherwise(extractIndices(col("retweeted_status.entities.media"))))
-          .withColumn("urls", when(col("retweeted_status").isNull, col("entities.urls")).otherwise(col("retweeted_status.entities.urls")))
-          .withColumn("user_mentions", when(col("retweeted_status").isNull, col("entities.user_mentions")).otherwise(col("retweeted_status.entities.user_mentions")))
+          .withColumn("urls", when(col("retweeted_status").isNull, extractIndices(col("entities.urls"))).otherwise(extractIndices(col("retweeted_status.entities.urls"))))
+          .withColumn("user_mentions", when(col("retweeted_status").isNull, extractIndices(col("entities.user_mentions"))).otherwise(extractIndices(col("retweeted_status.entities.user_mentions"))))
       }
     }
 

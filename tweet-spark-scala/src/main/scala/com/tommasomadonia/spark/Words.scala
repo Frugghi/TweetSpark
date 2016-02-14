@@ -34,7 +34,6 @@ object Words {
         .filterMalformed()
         .filterRetweets(ignoreRetweets)
         .withColumn("time_slice", timeSlice(col("created_at")))
-        .cache()
 
       val countDataFrame: DataFrame = timeSlicedDataFrame
         .groupBy("time_slice")
