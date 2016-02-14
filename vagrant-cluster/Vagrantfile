@@ -72,10 +72,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             slave.vm.provision "file", source: "resources/", destination: "#{resources_dir}"
             slave.vm.provision "file", source: "scripts/common.sh", destination: "#{resources_dir}/common.sh"
             slave.vm.provider "virtualbox" do |virtualbox|
-              virtualbox.gui = gui
-              virtualbox.name = "#{nodename}"
-              virtualbox.memory = slaveMemory
-              virtualbox.cpus = cpus
+                virtualbox.gui = gui
+                virtualbox.name = "#{nodename}"
+                virtualbox.memory = slaveMemory
+                virtualbox.cpus = cpus
             end
             slave.vm.network network, ip: "#{ip}"
             slave.vm.hostname = "#{nodename}.cluster"
@@ -159,9 +159,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
             monitor.vm.provision "shell", path: "scripts/setup-java.sh", args: "-j #{javaVersion}"
             monitor.vm.provision "shell", path: "scripts/setup-ntp.sh"
             monitor.vm.provision "shell", path: "scripts/setup-ambari-server.sh", args: "#{ambariRepo}"
-			if ambariAutosetup
+	    if ambariAutosetup
                 monitor.vm.provision "shell", path: "scripts/ambari-spark-cluster.sh", args: "-h #{totalHosts}"
-			end
+	    end
         end
     end
 end
