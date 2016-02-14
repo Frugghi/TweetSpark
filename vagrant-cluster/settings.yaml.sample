@@ -8,7 +8,7 @@ java:
 
 # Hadoop version
 hadoop:
-  version: 2.7.1
+  version: 2.7.2
 
 # Spark version
 spark:
@@ -37,7 +37,7 @@ ambari:
 box:
   os: centos7
   gui: false
-  cpus: 2
+  cpus: 1
   network: public_network
   base_address: 10.211.55.100
   resources_dir: /home/vagrant/resources
