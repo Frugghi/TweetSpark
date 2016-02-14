@@ -45,7 +45,7 @@ The script uses [application-only authentication](https://dev.twitter.com/oauth/
 - Set `ambari.enabled` to `true` in `settings.yml`
 
 #### Environment
-Currently the script set up a cluster of 1 master node and 2 slave nodes with 64bit CentOS 7, Java 7u79, Hadoop 2.7.1 and Spark 1.6.0 (without Hadoop).
+Currently the script set up a cluster of 1 master node and 3 slave nodes with 64bit CentOS 7, Java 7u79, Hadoop 2.7.1 and Spark 1.6.0 (without Hadoop).
 
 You can configure the cluster in `settings.yml`.
 
