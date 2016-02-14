@@ -31,12 +31,12 @@ echo "Updating profiler settings..."
 local profiler="$VAGRANT_RES_DIR/profiler/update-profiler-node.sh"
 local profiler_jar=""
 if [ -e "$VAGRANT_RES_DIR/profiler/profiler" ]; then
-	profiler_jar=`cat "$VAGRANT_RES_DIR/profiler/profiler"`
+    profiler_jar=`cat "$VAGRANT_RES_DIR/profiler/profiler"`
 else
-	profiler_jar=`basename $(find "$VAGRANT_RES_DIR/profiler" -name 'statsd-jvm-profiler*.jar')`
+    profiler_jar=`basename $(find "$VAGRANT_RES_DIR/profiler" -name 'statsd-jvm-profiler*.jar')`
 fi
 
-local profiler_options="-javaagent:/home/vagrant/resources/profiler/${profiler_jar}=server=${SEVER},port=${PORT},reporter=${REPORTER},database=${DATABASE},username=${USERNAME},password=${PASSWORD},prefix=bigdata.profiler.$(basename $1 .jar).USERNAME_HERE.${2//\//}.$RANDOM.$(date +'%y%m%d-%H%M'),tagMapping=SKIP.SKIP.username.job.flow.stage.phase"
+local profiler_options="-javaagent:/home/vagrant/resources/profiler/${profiler_jar}=server=${SEVER},port=${PORT},reporter=${REPORTER},database=${DATABASE},username=${USERNAME},password=${PASSWORD},prefix=bigdata.profiler.USERNAME_HERE.$(date +'%y%m%d-%H%M').$RANDOM.all.all,tagMapping=SKIP.SKIP.username.job.flow.stage.phase"
 if [ ! -z "$WHITELIST" ]; then
     profiler_options="${profiler_options},packageWhitelist=${WHITELIST}"
 fi
@@ -50,7 +50,7 @@ fi
 $profiler "$profiler_options"
 while IFS= read -r host
 do
-	ssh -n $host "$profiler $profiler_options"
+    ssh -n $host "$profiler $profiler_options"
 done < <( grep -o -e 'slave[0-9]*\.cluster$' /etc/hosts )
 ${HADOOP_PREFIX}/sbin/stop-yarn.sh
 ${HADOOP_PREFIX}/sbin/start-yarn.sh
