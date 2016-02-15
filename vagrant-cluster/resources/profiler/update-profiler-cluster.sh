@@ -10,8 +10,9 @@ PASSWORD="profiler"
 WHITELIST=""
 BLACKLIST=""
 PROFILERS=""
+EMPTY=0
 
-while getopts s:t:r:d:u:p:w:b:f: option
+while getopts s:t:r:d:u:p:w:b:f:e option
 do
     case "${option}"
     in
@@ -24,27 +25,33 @@ do
         w) WHITELIST=${OPTARG};;
         b) BLACKLIST=${OPTARG};;
         f) PROFILERS=${OPTARG};;
+		e) EMPTY=1;;
     esac
 done
 
 echo "Updating profiler settings..."
-local profiler="$VAGRANT_RES_DIR/profiler/update-profiler-node.sh"
-local profiler_jar=""
+profiler="$VAGRANT_RES_DIR/profiler/update-profiler-node.sh"
+profiler_jar=""
 if [ -e "$VAGRANT_RES_DIR/profiler/profiler" ]; then
     profiler_jar=`cat "$VAGRANT_RES_DIR/profiler/profiler"`
 else
     profiler_jar=`basename $(find "$VAGRANT_RES_DIR/profiler" -name 'statsd-jvm-profiler*.jar')`
 fi
 
-local profiler_options="-javaagent:/home/vagrant/resources/profiler/${profiler_jar}=server=${SEVER},port=${PORT},reporter=${REPORTER},database=${DATABASE},username=${USERNAME},password=${PASSWORD},prefix=bigdata.profiler.USERNAME_HERE.$(date +'%y%m%d-%H%M').$RANDOM.all.all,tagMapping=SKIP.SKIP.username.job.flow.stage.phase"
-if [ ! -z "$WHITELIST" ]; then
-    profiler_options="${profiler_options},packageWhitelist=${WHITELIST}"
-fi
-if [ ! -z "$BLACKLIST" ]; then
-    profiler_options="${profiler_options},packageBlacklist=${BLACKLIST}"
-fi
-if [ ! -z "$PROFILERS" ]; then
-    profiler_options="${profiler_options},profilers=${PROFILERS}"
+if [ "$EMPTY" -eq 1 ]; then
+    profiler_options=""
+else
+    profiler_options="-javaagent:/home/vagrant/resources/profiler/${profiler_jar}=server=${SERVER},port=${PORT},reporter=${REPORTER},database=${DATABASE},username=${USERNAME},password=${PASSWORD},prefix=bigdata.profiler.USERNAME_HERE.$(date +'%y%m%d-%H%M').$RANDOM.all.all,tagMapping=SKIP.SKIP.username.job.flow.stage.phase"
+    
+	if [ ! -z "$WHITELIST" ]; then
+       profiler_options="${profiler_options},packageWhitelist=${WHITELIST}"
+    fi
+    if [ ! -z "$BLACKLIST" ]; then
+       profiler_options="${profiler_options},packageBlacklist=${BLACKLIST}"
+    fi
+    if [ ! -z "$PROFILERS" ]; then
+        profiler_options="${profiler_options},profilers=${PROFILERS}"
+    fi
 fi
 
 $profiler "$profiler_options"
